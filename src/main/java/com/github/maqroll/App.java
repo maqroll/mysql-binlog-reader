@@ -1,4 +1,4 @@
-package maqroll.github.com;
+package com.github.maqroll;
 
 /** Hello world! */
 public class App {
