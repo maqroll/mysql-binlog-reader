@@ -1,4 +1,4 @@
-package maqroll.github.com;
+package com.github.maqroll;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
