@@ -1,5 +1,8 @@
 package maqroll.github.com;
 
+import com.github.mheath.netty.codec.mysql.CapabilityFlags;
+import com.github.mheath.netty.codec.mysql.MysqlClientPacketEncoder;
+import com.github.mheath.netty.codec.mysql.MysqlServerConnectionPacketDecoder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
