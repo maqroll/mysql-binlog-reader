@@ -1,0 +1,3 @@
+[submodule "netty-mysql-codec"]
+	path = netty-mysql-codec
+	url = https://github.com/maqroll/netty-mysql-codec.git
