@@ -1,14 +1,12 @@
 package com.github.maqroll;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.junit.jupiter.api.Test;
 
-/** Unit test for simple App. */
 public class AppTest {
-  /** Rigorous Test :-) */
+  static int serverPort = /*Integer.parseInt(System.getProperty("mysql1.port"))*/ 32778;
+
   @Test
   public void shouldAnswerWithTrue() {
-    assertTrue(true);
+    new BinlogConnection(serverPort);
   }
 }

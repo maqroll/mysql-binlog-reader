@@ -1,4 +1,4 @@
-package maqroll.github.com;
+package com.github.maqroll;
 
 import com.github.mheath.netty.codec.mysql.CapabilityFlags;
 import com.github.mheath.netty.codec.mysql.Handshake;
@@ -30,7 +30,9 @@ public class BinlogConnection {
             CapabilityFlags.CLIENT_CONNECT_WITH_DB));
   }
 
-  public BinlogConnection() {
+  public BinlogConnection(int port) {
+    Adapter adapter = new Adapter();
+
     eventLoopGroup = new NioEventLoopGroup();
     bootstrap = new Bootstrap();
     bootstrap.group(eventLoopGroup);
@@ -42,40 +44,20 @@ public class BinlogConnection {
             CapabilityFlags.setCapabilitiesAttr(ch, CLIENT_CAPABILITIES);
             ch.pipeline().addLast(new MysqlServerConnectionPacketDecoder());
             ch.pipeline().addLast(new MysqlClientPacketEncoder());
+            // TODO add the rest of handlers
+            ch.pipeline().addLast(adapter);
           }
         });
 
-    ChannelFuture connectFuture = bootstrap.connect("localhost", 3306);
+    ChannelFuture connectFuture = bootstrap.connect("localhost", port);
 
-    try {
-      connectFuture.addListener(
-          (ChannelFutureListener)
-              future -> {
-                if (future.isSuccess()) {
-                  future
-                      .channel()
-                      .pipeline()
-                      .addLast(
-                          new ChannelInboundHandlerAdapter() {
-                            @Override
-                            public void channelRead(ChannelHandlerContext ctx, Object msg)
-                                throws Exception {
-                              if (msg instanceof Handshake) {
-                                CapabilityFlags.getCapabilitiesAttr(ctx.channel())
-                                    .retainAll(((Handshake) msg).getCapabilities());
-                              }
-                              // serverPackets.add((MysqlServerPacket) msg);
-                            }
-                          });
-                }
-              });
-      connectFuture = connectFuture.sync();
-      if (!connectFuture.isSuccess()) {
-        throw new RuntimeException(connectFuture.cause());
-      }
-      Channel channel = connectFuture.channel();
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
+    connectFuture = connectFuture.awaitUninterruptibly();
+    if (!connectFuture.isSuccess()) {
+      throw new RuntimeException(connectFuture.cause());
     }
+    Channel channel = connectFuture.channel();
+    ChannelFuture closeFuture = channel.closeFuture();
+
+    closeFuture.awaitUninterruptibly();
   }
 }
