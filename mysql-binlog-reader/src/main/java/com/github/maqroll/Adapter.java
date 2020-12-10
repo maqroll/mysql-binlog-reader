@@ -1,12 +1,12 @@
 package com.github.maqroll;
 
+import com.github.mheath.netty.codec.mysql.Handshake;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-public class Adapter extends ChannelInboundHandlerAdapter {
+public class Adapter extends ChannelInboundHandlerAdapter implements PacketVisitor {
   private static final Logger LOGGER = LoggerFactory.getLogger(Adapter.class);
 
   public Adapter() {}
@@ -27,5 +27,10 @@ public class Adapter extends ChannelInboundHandlerAdapter {
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
     LOGGER.error("Closing connection after uncaught exception", cause);
     ctx.close();
+  }
+
+  @Override
+  public void visit(Handshake pkt, ChannelHandlerContext ctx) {
+
   }
 }
