@@ -44,6 +44,7 @@ public class BinlogConnection {
             CapabilityFlags.setCapabilitiesAttr(ch, CLIENT_CAPABILITIES);
             ch.pipeline().addLast(new MysqlServerConnectionPacketDecoder());
             ch.pipeline().addLast(new MysqlClientPacketEncoder());
+            ch.pipeline().addLast(new BinlogDumpEncoder());
             // TODO add the rest of handlers
             ch.pipeline().addLast(adapter);
           }

@@ -8,8 +8,8 @@ import java.util.EnumSet;
 public class BinlogDumpCommand extends CommandPacket {
 
   private final EnumSet<BinlogDumpFlag> flags;
-  private final long pos;
-  private final long serverId;
+  private final int pos;
+  private final int serverId;
   private final String fileName;
 
   private BinlogDumpCommand(Builder builder) {
@@ -24,11 +24,11 @@ public class BinlogDumpCommand extends CommandPacket {
     return flags;
   }
 
-  public long getPos() {
+  public int getPos() {
     return pos;
   }
 
-  public long getServerId() {
+  public int getServerId() {
     return serverId;
   }
 
@@ -43,21 +43,21 @@ public class BinlogDumpCommand extends CommandPacket {
   public static class Builder {
     private int sequenceId;
     private EnumSet<BinlogDumpFlag> flags;
-    private Long pos;
+    private Integer pos;
     private String fileName;
-    private Long serverId;
+    private Integer serverId;
 
     public Builder sequenceId(int sequenceId) {
       this.sequenceId = sequenceId;
       return this;
     }
 
-    public Builder pos(long pos) {
+    public Builder pos(int pos) {
       this.pos = pos;
       return this;
     }
     
-    public Builder serverId(long serverId) {
+    public Builder serverId(int serverId) {
       this.serverId = serverId;
       return this;
     }
