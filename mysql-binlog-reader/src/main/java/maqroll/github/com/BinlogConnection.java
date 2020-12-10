@@ -4,7 +4,6 @@ import com.github.mheath.netty.codec.mysql.CapabilityFlags;
 import com.github.mheath.netty.codec.mysql.Handshake;
 import com.github.mheath.netty.codec.mysql.MysqlClientPacketEncoder;
 import com.github.mheath.netty.codec.mysql.MysqlServerConnectionPacketDecoder;
-import com.github.mheath.netty.codec.mysql.MysqlServerPacket;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -49,19 +48,27 @@ public class BinlogConnection {
     ChannelFuture connectFuture = bootstrap.connect("localhost", 3306);
 
     try {
-      connectFuture.addListener((ChannelFutureListener) future -> {
-        if (future.isSuccess()) {
-          future.channel().pipeline().addLast(new ChannelInboundHandlerAdapter() {
-            @Override
-            public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-              if (msg instanceof Handshake) {
-                CapabilityFlags.getCapabilitiesAttr(ctx.channel()).retainAll(((Handshake) msg).getCapabilities());
-              }
-              //serverPackets.add((MysqlServerPacket) msg);
-            }
-          });
-        }
-      });
+      connectFuture.addListener(
+          (ChannelFutureListener)
+              future -> {
+                if (future.isSuccess()) {
+                  future
+                      .channel()
+                      .pipeline()
+                      .addLast(
+                          new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void channelRead(ChannelHandlerContext ctx, Object msg)
+                                throws Exception {
+                              if (msg instanceof Handshake) {
+                                CapabilityFlags.getCapabilitiesAttr(ctx.channel())
+                                    .retainAll(((Handshake) msg).getCapabilities());
+                              }
+                              // serverPackets.add((MysqlServerPacket) msg);
+                            }
+                          });
+                }
+              });
       connectFuture = connectFuture.sync();
       if (!connectFuture.isSuccess()) {
         throw new RuntimeException(connectFuture.cause());
