@@ -1,15 +1,5 @@
 package com.github.maqroll;
 
-import com.github.mheath.netty.codec.mysql.MysqlServerPacketVisitor;
-import com.github.mheath.netty.codec.mysql.OkResponse;
-import com.github.mheath.netty.codec.mysql.ServerStatusFlag;
-import io.netty.channel.ChannelHandlerContext;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Set;
-
 public class ReplicationEventHeader {
 
   private long timestamp;

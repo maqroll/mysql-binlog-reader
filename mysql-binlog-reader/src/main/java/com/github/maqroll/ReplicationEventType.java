@@ -1,8 +1,6 @@
 package com.github.maqroll;
 
-/**
- * https://mariadb.com/kb/en/2-binlog-event-header/
- */
+/** https://mariadb.com/kb/en/2-binlog-event-header/ */
 public enum ReplicationEventType {
   UNKNOWN_EVENT(0x00), /* mysql */
   START_EVENT_V3(0x01), /* mysql */

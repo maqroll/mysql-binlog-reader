@@ -2,7 +2,6 @@ package com.github.maqroll;
 
 import com.github.mheath.netty.codec.mysql.Command;
 import com.github.mheath.netty.codec.mysql.CommandPacket;
-
 import java.util.Collections;
 import java.util.EnumSet;
 
@@ -57,7 +56,7 @@ public class BinlogDumpCommand extends CommandPacket {
       this.pos = pos;
       return this;
     }
-    
+
     public Builder serverId(int serverId) {
       this.serverId = serverId;
       return this;
@@ -77,7 +76,12 @@ public class BinlogDumpCommand extends CommandPacket {
 
     public BinlogDumpCommand build() {
       // TODO validaciones
-      if (pos < 4) { pos = 4; }
+      if (pos < 4) {
+        pos = 4;
+      }
+      if (serverId == 0) {
+        serverId = 65535; // if blank didn't obey blocking
+      }
       return new BinlogDumpCommand(this);
     }
   }

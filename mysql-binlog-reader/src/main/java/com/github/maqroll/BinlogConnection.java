@@ -27,7 +27,7 @@ public class BinlogConnection {
   }
 
   public BinlogConnection(int port) {
-    Adapter adapter = new Adapter();
+    ReplicationInboundHandler replicationInboundHandler = new ReplicationInboundHandler();
 
     eventLoopGroup = new NioEventLoopGroup();
     bootstrap = new Bootstrap();
@@ -42,7 +42,7 @@ public class BinlogConnection {
             ch.pipeline().addLast("clientEncoder", new MysqlClientPacketEncoder());
             ch.pipeline().addLast("binlogEncoder", new BinlogDumpEncoder());
             // TODO add the rest of handlers
-            ch.pipeline().addLast("adapter", adapter);
+            ch.pipeline().addLast("adapter", replicationInboundHandler);
           }
         });
 
