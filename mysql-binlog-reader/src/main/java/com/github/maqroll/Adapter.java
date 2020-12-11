@@ -9,6 +9,8 @@ import com.github.mheath.netty.codec.mysql.MysqlNativePasswordUtil;
 import com.github.mheath.netty.codec.mysql.MysqlPacket;
 import com.github.mheath.netty.codec.mysql.MysqlServerPacketVisitor;
 import com.github.mheath.netty.codec.mysql.OkResponse;
+import com.github.mheath.netty.codec.mysql.QueryCommand;
+import com.github.mheath.netty.codec.mysql.Visitable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -18,12 +20,13 @@ import static com.github.maqroll.BinlogConnection.CLIENT_CAPABILITIES;
 
 public class Adapter extends ChannelInboundHandlerAdapter implements MysqlServerPacketVisitor {
   private static final Logger LOGGER = LoggerFactory.getLogger(Adapter.class);
+  private boolean updated = false;
 
   public Adapter() {}
 
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-    MysqlPacket packet = (MysqlPacket)msg;
+    Visitable packet = (Visitable)msg;
     packet.accept(this, ctx);
   }
 
@@ -55,6 +58,18 @@ public class Adapter extends ChannelInboundHandlerAdapter implements MysqlServer
   @Override
   public void visit(OkResponse ok, ChannelHandlerContext ctx) {
     LOGGER.info("ok");
+    // TODO is it necessary to check binlog value???
+    if (!updated) {
+      QueryCommand query = new QueryCommand(0, "set @master_binlog_checksum= @@global.binlog_checksum");
+      ctx.writeAndFlush(query);
+      updated = true;
+    } else {
+      LOGGER.info("Requesting binlog stream");
+      BinlogDumpCommand binlogDumpCommand = BinlogDumpCommand.builder().fileName("").addFlags(BinlogDumpFlag.BINLOG_DUMP_NON_BLOCK).build();
+      ctx.writeAndFlush(binlogDumpCommand);
+      ctx.channel().pipeline().remove("serverDecoder");
+      ctx.channel().pipeline().addFirst("replicationStreamDecoder", new ReplicationStreamDecoder());
+    }
   }
 
   @Override
@@ -64,6 +79,6 @@ public class Adapter extends ChannelInboundHandlerAdapter implements MysqlServer
 
   @Override
   public void visit(ErrorResponse error, ChannelHandlerContext ctx) {
-    LOGGER.info("error");
+    LOGGER.info("error {}", error.getMessage());
   }
 }

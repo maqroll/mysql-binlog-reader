@@ -17,6 +17,7 @@ public class BinlogDumpEncoder extends AbstractPacketEncoder<BinlogDumpCommand> 
       final Charset serverCharset =
           MysqlCharacterSet.getServerCharsetAttr(ctx.channel()).getCharset();
 
+      buf.writeByte(packet.getCommand().getCommandCode());
       buf.writeIntLE(packet.getPos());
       buf.writeShortLE((int) CodecUtils.toLong(packet.getFlags()));
       buf.writeIntLE(packet.getServerId());

@@ -3,6 +3,7 @@ package com.github.maqroll;
 import com.github.mheath.netty.codec.mysql.Command;
 import com.github.mheath.netty.codec.mysql.CommandPacket;
 
+import java.util.Collections;
 import java.util.EnumSet;
 
 public class BinlogDumpCommand extends CommandPacket {
@@ -42,10 +43,10 @@ public class BinlogDumpCommand extends CommandPacket {
 
   public static class Builder {
     private int sequenceId;
-    private EnumSet<BinlogDumpFlag> flags;
-    private Integer pos;
+    private EnumSet<BinlogDumpFlag> flags = EnumSet.noneOf(BinlogDumpFlag.class);
+    private int pos;
     private String fileName;
-    private Integer serverId;
+    private int serverId;
 
     public Builder sequenceId(int sequenceId) {
       this.sequenceId = sequenceId;
@@ -66,9 +67,17 @@ public class BinlogDumpCommand extends CommandPacket {
       this.fileName = fileName;
       return this;
     }
-    
+
+    // oversize
+    public Builder addFlags(BinlogDumpFlag flag, BinlogDumpFlag... flags) {
+      this.flags.add(flag);
+      Collections.addAll(this.flags, flags);
+      return this;
+    }
+
     public BinlogDumpCommand build() {
       // TODO validaciones
+      if (pos < 4) { pos = 4; }
       return new BinlogDumpCommand(this);
     }
   }

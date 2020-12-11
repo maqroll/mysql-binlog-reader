@@ -1,15 +1,11 @@
 package com.github.maqroll;
 
 import com.github.mheath.netty.codec.mysql.CapabilityFlags;
-import com.github.mheath.netty.codec.mysql.Handshake;
 import com.github.mheath.netty.codec.mysql.MysqlClientPacketEncoder;
 import com.github.mheath.netty.codec.mysql.MysqlServerConnectionPacketDecoder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -42,11 +38,11 @@ public class BinlogConnection {
           @Override
           public void initChannel(SocketChannel ch) throws Exception {
             CapabilityFlags.setCapabilitiesAttr(ch, CLIENT_CAPABILITIES);
-            ch.pipeline().addLast(new MysqlServerConnectionPacketDecoder());
-            ch.pipeline().addLast(new MysqlClientPacketEncoder());
-            ch.pipeline().addLast(new BinlogDumpEncoder());
+            ch.pipeline().addLast("serverDecoder", new MysqlServerConnectionPacketDecoder());
+            ch.pipeline().addLast("clientEncoder", new MysqlClientPacketEncoder());
+            ch.pipeline().addLast("binlogEncoder", new BinlogDumpEncoder());
             // TODO add the rest of handlers
-            ch.pipeline().addLast(adapter);
+            ch.pipeline().addLast("adapter", adapter);
           }
         });
 

@@ -25,9 +25,15 @@
     <netty.version>4.1.50.Final</netty.version>
     <assertj.version>3.5.2</assertj.version>
     <slf4j.version>1.7.30</slf4j.version>
+    <mariadb-connector.version>2.7.0</mariadb-connector.version>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.mariadb.jdbc</groupId>
+      <artifactId>mariadb-java-client</artifactId>
+      <version>${mariadb-connector.version}</version>
+    </dependency>
     <dependency>
       <groupId>com.github.mheath</groupId>
       <artifactId>netty-codec-mysql</artifactId>
@@ -172,7 +178,7 @@
               <images>
                 <image>
                   <alias>mysql1</alias>
-                  <name>mariadb:10.2</name>
+                  <name>mariadb:10.5.8</name>
                   <run>
                     <env>
                       <MYSQL_USER>db_user</MYSQL_USER>
@@ -180,7 +186,12 @@
                       <MYSQL_ROOT_PASSWORD>root</MYSQL_ROOT_PASSWORD>
                       <MYSQL_DATABASE>test_db</MYSQL_DATABASE>
                     </env>
-                    <wait>
+                    <cmd>
+                      <arg>--log-bin=/var/lib/mysql/binlog</arg>
+                      <arg>--binlog-format=ROW</arg>
+                      <arg>--binlog_row_metadata=FULL</arg>
+                    </cmd>
+                   <wait>
                       <log>MySQL init process done. Ready for start up.</log>
                       <time>80000</time>
                     </wait>
