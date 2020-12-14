@@ -88,13 +88,16 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
       case RESPONSE_OK:
         // TODO
         ReplicationEventHeader header = decodeHeader(packet);
-        int length = packet.readableBytes() - checksum.getValue();
-        packet = packet.retainedSlice(0, length);
-        parallelDeserializer.addPacket(header, packet, serverInfo.getChecksumType());
-        LOGGER.info("Received " + header.getEventType());
+        if (ReplicationEventType.ROTATE_EVENT.equals(header.getEventType())) {
+          int length = packet.readableBytes() - checksum.getValue();
+          packet = packet.retainedSlice(0, length);
+
+          parallelDeserializer.addPacket(header, packet, serverInfo.getChecksumType());
+          LOGGER.info("Received " + header.getEventType());
 /*        if (parallelDeserializer.pending()) {
           ctx.executor().schedule(() -> injectDeserializedMessages(ctx), 5, TimeUnit.MILLISECONDS);
         }*/
+        }
         break;
       case RESPONSE_EOF:
         // TODO
