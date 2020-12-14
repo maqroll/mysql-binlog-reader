@@ -27,9 +27,11 @@ public class BinlogConnection {
   }
 
   public BinlogConnection(int port) {
-    ReplicationInboundHandler replicationInboundHandler = new ReplicationInboundHandler();
+    final ReplicationInboundHandler replicationInboundHandler = new ReplicationInboundHandler();
+    final ServerInfo serverInfo = new ServerInfo(null, ChecksumType.CRC32); // TODO
 
     eventLoopGroup = new NioEventLoopGroup();
+    eventLoopGroup.setIoRatio(1); //lag between deserialization and notification!!!
     bootstrap = new Bootstrap();
     bootstrap.group(eventLoopGroup);
     bootstrap.channel(NioSocketChannel.class);
@@ -38,6 +40,8 @@ public class BinlogConnection {
           @Override
           public void initChannel(SocketChannel ch) throws Exception {
             CapabilityFlags.setCapabilitiesAttr(ch, CLIENT_CAPABILITIES);
+            ServerInfo.setServerInfoAttr(ch, serverInfo);
+
             ch.pipeline().addLast("serverDecoder", new MysqlServerConnectionPacketDecoder());
             ch.pipeline().addLast("clientEncoder", new MysqlClientPacketEncoder());
             ch.pipeline().addLast("binlogEncoder", new BinlogDumpEncoder());

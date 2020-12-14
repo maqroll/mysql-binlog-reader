@@ -5,6 +5,7 @@ import com.github.mheath.netty.codec.mysql.ErrorResponse;
 import com.github.mheath.netty.codec.mysql.Handshake;
 import com.github.mheath.netty.codec.mysql.MysqlServerPacketVisitor;
 import com.github.mheath.netty.codec.mysql.OkResponse;
+import com.github.mheath.netty.codec.mysql.ReplicationEvent;
 import com.github.mheath.netty.codec.mysql.Visitable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -54,5 +55,10 @@ public class ReplicationInboundHandler extends ChannelInboundHandlerAdapter
   @Override
   public void visit(ErrorResponse error, ChannelHandlerContext ctx) {
     replicationState = replicationState.error(error, ctx);
+  }
+
+  @Override
+  public void visit(ReplicationEvent repEvent, ChannelHandlerContext ctx) {
+    LOGGER.info("Received replication event");
   }
 }
