@@ -3,7 +3,6 @@ package com.github.maqroll;
 import com.github.mheath.netty.codec.mysql.ReplicationEventPayload;
 import com.github.mheath.netty.codec.mysql.RowsChangedVisitable;
 import com.github.mheath.netty.codec.mysql.RowsChangedVisitor;
-
 import java.util.BitSet;
 import java.util.List;
 
