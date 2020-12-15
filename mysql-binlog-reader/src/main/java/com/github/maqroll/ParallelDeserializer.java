@@ -145,6 +145,7 @@ public class ParallelDeserializer {
                 }
               }
             });
+    tasks.add(submit);
 
     // For certain tasks we are going to wait before returning because next
     // packets can't be deserialized until it finishes
@@ -160,9 +161,9 @@ public class ParallelDeserializer {
         lock.unlock();
       }
       waitUntilFinishesAndUpdateCurrentTableMap(submit);
-      return; // make sure has finished before returning from here
-    } else {
-      tasks.add(submit);
+      // Important!!!
+      // At this point all previous tasks have finished
+      // so it's safe to update current table map
     }
   }
 
