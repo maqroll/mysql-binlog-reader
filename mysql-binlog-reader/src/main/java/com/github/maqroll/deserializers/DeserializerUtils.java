@@ -330,46 +330,59 @@ public class DeserializerUtils {
     return CodecUtils.readFixedLengthString(buf, stringLength, Charset.defaultCharset());
   }
 
-  /*
   // BLOB
-  public static deserializeBlob(int meta, ByteArrayInputStream inputStream) throws IOException {
-    int blobLength = inputStream.readInteger(meta);
-    return inputStream.read(blobLength);
+  public static byte[] deserializeBlob(int meta, ByteBuf buf) {
+    int blobLength = readInteger(meta, buf);
+    byte[] res = new byte[blobLength];
+    buf.readBytes(res);
+    return res;
+  }
+
+  /** Read int written in little-endian format. */
+  private static int readInteger(int length, ByteBuf buf) {
+    int result = 0;
+    for (int i = 0; i < length; ++i) {
+      result |= (buf.readUnsignedByte() << (i << 3));
+    }
+    return result;
   }
 
   // ENUM
-  public static deserializeEnum(int length, ByteArrayInputStream inputStream) throws IOException {
-    return inputStream.readInteger(length);
+  // TODO Apparently ENUM type can't be in the binlog
+  // https://dev.mysql.com/doc/dev/mysql-server/latest/classbinary__log_1_1Table__map__event.html#Table_table_map_event_column_types
+  public static Integer deserializeEnum(int length, ByteBuf buf) {
+    // return readInteger(length, buf);
+    throw new IllegalStateException("ENUM type can't be in the binlog");
   }
 
   // SET
-  public static deserializeSet(int length, ByteArrayInputStream inputStream) throws IOException {
-    return inputStream.readLong(length);
+  // TODO Apparently SET can't be in the binlog
+  public static Long deserializeSet(int length, ByteBuf buf) throws IOException {
+    // return inputStream.readLong(length);
+    throw new IllegalStateException("SET type can't be in the binlog");
   }
 
   // GEOMETRY
-  public static deserializeGeometry(int meta, ByteArrayInputStream inputStream) throws IOException {
-    int dataLength = inputStream.readInteger(meta);
-    return inputStream.read(dataLength);
-  }*/
+  public static byte[] deserializeGeometry(int meta, ByteBuf buf) {
+    int dataLength = readInteger(meta, buf);
+    byte[] res = new byte[dataLength];
+    buf.readBytes(res);
+    return res;
+  }
 
-  /**
+  /*
    * Deserialize the {@code JSON} value on the input stream, and return MySQL's internal binary
    * representation of the JSON value. See {@link
    * com.github.shyiko.mysql.binlog.event.deserialization.json.JsonBinary} for a utility to parse
    * this binary representation into something more useful, including a string representation.
-   *
-   * @param meta the number of bytes in which the length of the JSON value is found first on the
-   *     input stream
-   * @param inputStream the stream containing the JSON value
-   * @return the MySQL internal binary representation of the JSON value; may be null
-   * @throws IOException if there is a problem reading the input stream
    */
   // JSON
-  /*  public static byte[] deserializeJson(int meta, ByteArrayInputStream inputStream) throws IOException {
-    int blobLength = inputStream.readInteger(meta);
-    return inputStream.read(blobLength);
-  }*/
+  public static byte[] deserializeJson(int meta, ByteBuf buf) {
+    int blobLength = readInteger(meta, buf);
+    byte[] res = new byte[blobLength];
+    buf.readBytes(res);
+    return res;
+  }
 
   /** Class for working with Unix time. */
   static class UnixTime {
