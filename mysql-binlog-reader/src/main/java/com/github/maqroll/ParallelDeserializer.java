@@ -132,8 +132,7 @@ public class ParallelDeserializer {
                 try {
                   final ReplicationEventPayloadDeserializer<?> deserializer =
                       deserializers.get(header.getEventType());
-                  ReplicationEventPayload payload =
-                      deserializer.deserialize(buf, ch);
+                  ReplicationEventPayload payload = deserializer.deserialize(buf, ch);
                   return new ReplicationEvent() {
                     @Override
                     public ReplicationEventHeader header() {

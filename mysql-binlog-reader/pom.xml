@@ -34,11 +34,19 @@
       <artifactId>mariadb-java-client</artifactId>
       <version>${mariadb-connector.version}</version>
     </dependency>
+
+    <!-- siblings -->
     <dependency>
       <groupId>com.github.mheath</groupId>
       <artifactId>netty-codec-mysql</artifactId>
       <version>0.1-SNAPSHOT</version>
     </dependency>
+    <dependency>
+      <groupId>com.zendesk</groupId>
+      <artifactId>mysql-binlog-connector-java</artifactId>
+      <version>0.23.3</version>
+    </dependency>
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>

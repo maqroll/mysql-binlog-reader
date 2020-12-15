@@ -17,6 +17,7 @@
   <modules>
     <module>netty-mysql-codec</module>
     <module>mysql-binlog-reader</module>
+    <module>mysql-binlog-connector-java</module>
   </modules>
 
   <build>

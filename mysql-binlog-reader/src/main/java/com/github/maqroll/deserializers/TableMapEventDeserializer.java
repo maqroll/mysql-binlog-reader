@@ -6,7 +6,6 @@ import com.github.mheath.netty.codec.mysql.CodecUtils;
 import com.github.mheath.netty.codec.mysql.ColumnType;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,11 +29,45 @@ public class TableMapEventDeserializer
     }
     builder.columnTypes(columnTypes);
     int metadataBlockSize = (int) CodecUtils.readLengthEncodedInteger(buf);
-    buf.skipBytes(metadataBlockSize); // TODO at least decode column names
-    builder.columnNullability(Utils.readBitSet(buf,(int) numberOfColumns));
+    builder.columnMetadata(readMetadata(buf, columnTypes));
+    builder.columnNullability(Utils.readBitSet(buf, (int) numberOfColumns));
 
+    // TODO at least decode column names
     // in MySQL could be followed by optional metadata
     // https://dev.mysql.com/doc/dev/mysql-server/latest/classbinary__log_1_1Table__map__event.html#Table_table_map_event_column_types
     return builder.build();
+  }
+
+  private List<Integer> readMetadata(ByteBuf buf, List<ColumnType> columnTypes) {
+    List<Integer> metadata = new ArrayList<>();
+    for (ColumnType colType : columnTypes) {
+      switch (colType) {
+        case MYSQL_TYPE_FLOAT:
+        case MYSQL_TYPE_DOUBLE:
+        case MYSQL_TYPE_BLOB:
+        case MYSQL_TYPE_JSON:
+        case MYSQL_TYPE_GEOMETRY:
+          metadata.add(new Integer(buf.readUnsignedByte()));
+          break;
+        case MYSQL_TYPE_BIT:
+        case MYSQL_TYPE_VARCHAR:
+        case MYSQL_TYPE_NEWDECIMAL:
+          metadata.add(new Integer(buf.readUnsignedShortLE()));
+          break;
+        case MYSQL_TYPE_SET:
+        case MYSQL_TYPE_ENUM:
+        case MYSQL_TYPE_STRING:
+          metadata.add(new Integer(buf.readUnsignedShort()));
+          break;
+        case MYSQL_TYPE_TIME2:
+        case MYSQL_TYPE_DATETIME2:
+        case MYSQL_TYPE_TIMESTAMP2:
+          metadata.add(new Integer(buf.readUnsignedByte()));
+          break;
+        default:
+          metadata.add(null);
+      }
+    }
+    return metadata;
   }
 }

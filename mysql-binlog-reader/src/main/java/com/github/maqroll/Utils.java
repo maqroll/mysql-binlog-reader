@@ -1,7 +1,6 @@
 package com.github.maqroll;
 
 import io.netty.buffer.ByteBuf;
-
 import java.util.BitSet;
 
 public class Utils {

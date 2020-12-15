@@ -6,7 +6,6 @@ import com.github.maqroll.WriteRowsEventPayload;
 import com.github.mheath.netty.codec.mysql.CodecUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-
 import java.util.BitSet;
 
 public class WriteRowsEventDeserializer
@@ -25,7 +24,6 @@ public class WriteRowsEventDeserializer
     BitSet columnsSent = Utils.readBitSet(buf, (int) columnCount);
     BitSet nulls = Utils.readBitSet(buf, (int) columnCount);
     // TODO deserialize columns
-
 
     return builder.build();
   }

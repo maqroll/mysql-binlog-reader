@@ -16,7 +16,7 @@ public class TableMapEventPayload implements ReplicationEventPayload {
   private final String database;
   private final String table;
   private final List<ColumnType> columnTypes;
-  // private final int[] columnMetadata;
+  private final List<Integer> columnMetadata;
   private final BitSet columnNullability;
   // private TableMapEventMetadata eventMetadata;
   // TODO add column names
@@ -27,6 +27,7 @@ public class TableMapEventPayload implements ReplicationEventPayload {
     table = builder.table;
     columnTypes = builder.columnTypes;
     columnNullability = builder.columnNullability;
+    columnMetadata = builder.columnMetadata;
   }
 
   public static class Builder {
@@ -34,7 +35,7 @@ public class TableMapEventPayload implements ReplicationEventPayload {
     private String database;
     private String table;
     private List<ColumnType> columnTypes;
-    private int[] columnMetadata;
+    private List<Integer> columnMetadata;
     private BitSet columnNullability;
     // private TableMapEventMetadata eventMetadata;
 
@@ -64,6 +65,11 @@ public class TableMapEventPayload implements ReplicationEventPayload {
 
     public Builder columnNullability(BitSet columnNullability) {
       this.columnNullability = columnNullability;
+      return this;
+    }
+
+    public Builder columnMetadata(List<Integer> columnMetadata) {
+      this.columnMetadata = columnMetadata;
       return this;
     }
   }
@@ -106,5 +112,9 @@ public class TableMapEventPayload implements ReplicationEventPayload {
 
   public BitSet getColumnNullability() {
     return columnNullability;
+  }
+
+  public List<Integer> getColumnMetadata() {
+    return columnMetadata;
   }
 }
