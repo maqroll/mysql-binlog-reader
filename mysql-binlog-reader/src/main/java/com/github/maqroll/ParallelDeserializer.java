@@ -8,8 +8,8 @@ import com.github.mheath.netty.codec.mysql.ReplicationEventHeader;
 import com.github.mheath.netty.codec.mysql.ReplicationEventPayload;
 import com.github.mheath.netty.codec.mysql.ReplicationEventType;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +32,7 @@ public class ParallelDeserializer {
   private final ExecutorService executorService;
   private final BlockingQueue<Future<ReplicationEvent>> tasks = new LinkedBlockingQueue<>();
   private final ChannelHandlerContext ctx;
+  private final Channel ch;
   private final Map<ReplicationEventType, ReplicationEventPayloadDeserializer<?>> deserializers =
       new HashMap<>();
   private final Lock lock = new ReentrantLock();
@@ -41,6 +41,7 @@ public class ParallelDeserializer {
   // Results and exceptions get notified through ctx.
   public ParallelDeserializer(int capacity, final ChannelHandlerContext ctx) {
     this.ctx = ctx;
+    this.ch = ctx.channel();
 
     empty = lock.newCondition();
 
@@ -80,6 +81,7 @@ public class ParallelDeserializer {
                 }
 
                 try {
+                  lock.lock();
                   if (!pending()) {
                     empty.signal();
                   }
@@ -118,7 +120,10 @@ public class ParallelDeserializer {
   }
 
   public void addPacket(
-      final ReplicationEventHeader header, final ByteBuf buf, final ChecksumType checksumType) {
+      final ReplicationEventHeader header,
+      final ByteBuf buf,
+      final ChecksumType checksumType,
+      Channel ch) {
     final Future<ReplicationEvent> submit =
         executorService.submit(
             new Callable<ReplicationEvent>() {
@@ -128,7 +133,7 @@ public class ParallelDeserializer {
                   final ReplicationEventPayloadDeserializer<?> deserializer =
                       deserializers.get(header.getEventType());
                   ReplicationEventPayload payload =
-                      deserializer.deserialize(buf, Charset.defaultCharset());
+                      deserializer.deserialize(buf, ch);
                   return new ReplicationEvent() {
                     @Override
                     public ReplicationEventHeader header() {
@@ -160,16 +165,17 @@ public class ParallelDeserializer {
       } finally {
         lock.unlock();
       }
-      waitUntilFinishesAndUpdateCurrentTableMap(submit);
+      waitUntilFinishesAndUpdateCurrentTableMap(submit, ch);
       // Important!!!
       // At this point all previous tasks have finished
       // so it's safe to update current table map
     }
   }
 
-  private void waitUntilFinishesAndUpdateCurrentTableMap(Future<ReplicationEvent> evt) {
+  private void waitUntilFinishesAndUpdateCurrentTableMap(Future<ReplicationEvent> evt, Channel ch) {
     try {
-      evt.get();
+      TableMapEventPayload tableMap = (TableMapEventPayload) evt.get().payload();
+      tableMap.setCurrent(ch);
     } catch (InterruptedException e) {
       // ignore
     } catch (ExecutionException e) {

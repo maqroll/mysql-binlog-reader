@@ -2,10 +2,16 @@ package com.github.maqroll;
 
 import com.github.mheath.netty.codec.mysql.ColumnType;
 import com.github.mheath.netty.codec.mysql.ReplicationEventPayload;
+import io.netty.channel.Channel;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 import java.util.BitSet;
 import java.util.List;
 
 public class TableMapEventPayload implements ReplicationEventPayload {
+  private static final AttributeKey<TableMapEventPayload> key =
+      AttributeKey.newInstance(TableMapEventPayload.class.getName());
+
   private final long tableId;
   private final String database;
   private final String table;
@@ -63,6 +69,22 @@ public class TableMapEventPayload implements ReplicationEventPayload {
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  public static TableMapEventPayload getCurrent(Channel ch) {
+    final Attribute<TableMapEventPayload> attr = ch.attr(key);
+    TableMapEventPayload current = attr.get();
+
+    if (current == null) {
+      throw new IllegalArgumentException("TableMapEventPayload not set on channel");
+    }
+
+    return current;
+  }
+
+  public void setCurrent(Channel ch) {
+    final Attribute<TableMapEventPayload> attr = ch.attr(key);
+    attr.set(this);
   }
 
   public long getTableId() {

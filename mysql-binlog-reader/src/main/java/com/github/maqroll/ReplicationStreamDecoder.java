@@ -92,7 +92,7 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
           int length = packet.readableBytes() - checksum.getValue();
           packet = packet.retainedSlice(0, length);
 
-          parallelDeserializer.addPacket(header, packet, serverInfo.getChecksumType());
+          parallelDeserializer.addPacket(header, packet, serverInfo.getChecksumType(), channel);
           LOGGER.info("Received " + header.getEventType());
           /*        if (parallelDeserializer.pending()) {
             ctx.executor().schedule(() -> injectDeserializedMessages(ctx), 5, TimeUnit.MILLISECONDS);

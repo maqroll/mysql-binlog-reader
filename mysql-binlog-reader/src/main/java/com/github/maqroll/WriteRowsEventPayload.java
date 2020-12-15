@@ -1,9 +1,6 @@
 package com.github.maqroll;
 
-import com.github.mheath.netty.codec.mysql.ColumnType;
 import com.github.mheath.netty.codec.mysql.ReplicationEventPayload;
-import java.util.BitSet;
-import java.util.List;
 
 public class WriteRowsEventPayload implements ReplicationEventPayload {
   // TODO
@@ -22,7 +19,6 @@ public class WriteRowsEventPayload implements ReplicationEventPayload {
     public Builder x() {
       return this;
     }
-
   }
 
   public static Builder builder() {

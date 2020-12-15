@@ -4,6 +4,8 @@ import com.github.maqroll.TableMapEventPayload;
 import com.github.mheath.netty.codec.mysql.CodecUtils;
 import com.github.mheath.netty.codec.mysql.ColumnType;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -13,14 +15,14 @@ public class TableMapEventDeserializer
     implements ReplicationEventPayloadDeserializer<TableMapEventPayload> {
 
   @Override
-  public TableMapEventPayload deserialize(ByteBuf buf, Charset charset) {
+  public TableMapEventPayload deserialize(ByteBuf buf, Channel ch) {
     final TableMapEventPayload.Builder builder = TableMapEventPayload.builder();
 
     builder.tableId(CodecUtils.readUnsignedLongLE(buf, 6));
     buf.skipBytes(3);
-    builder.database(CodecUtils.readNullTerminatedString(buf, charset));
+    builder.database(CodecUtils.readNullTerminatedString(buf, Charset.defaultCharset())); // TODO
     buf.skipBytes(1);
-    builder.table(CodecUtils.readNullTerminatedString(buf, charset));
+    builder.table(CodecUtils.readNullTerminatedString(buf, Charset.defaultCharset())); // TODO
     long numberOfColumns = (int) CodecUtils.readLengthEncodedInteger(buf);
     List<ColumnType> columnTypes = new ArrayList<>();
     for (int i = 0; i < numberOfColumns; i++) {
