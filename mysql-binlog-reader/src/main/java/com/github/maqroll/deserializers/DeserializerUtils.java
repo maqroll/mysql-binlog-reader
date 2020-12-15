@@ -22,7 +22,6 @@ public class DeserializerUtils {
   private DeserializerUtils() {}
 
   // BIT
-
   /*
    A 1 byte unsigned int representing the length in bits of the bitfield (0 to 64),
    followed by a 1 byte unsigned int representing the number of bytes occupied by the bitfield.
