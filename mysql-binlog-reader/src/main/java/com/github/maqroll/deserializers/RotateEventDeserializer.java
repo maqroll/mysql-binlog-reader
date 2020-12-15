@@ -1,4 +1,4 @@
-package com.github.maqroll;
+package com.github.maqroll.deserializers;
 
 import com.github.mheath.netty.codec.mysql.CodecUtils;
 import com.github.mheath.netty.codec.mysql.RotateEventPayload;

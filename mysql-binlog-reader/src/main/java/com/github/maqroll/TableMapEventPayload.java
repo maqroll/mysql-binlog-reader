@@ -2,7 +2,6 @@ package com.github.maqroll;
 
 import com.github.mheath.netty.codec.mysql.ColumnType;
 import com.github.mheath.netty.codec.mysql.ReplicationEventPayload;
-
 import java.util.BitSet;
 import java.util.List;
 
@@ -11,9 +10,9 @@ public class TableMapEventPayload implements ReplicationEventPayload {
   private final String database;
   private final String table;
   private final List<ColumnType> columnTypes;
-  //private final int[] columnMetadata;
+  // private final int[] columnMetadata;
   private final BitSet columnNullability;
-  //private TableMapEventMetadata eventMetadata;
+  // private TableMapEventMetadata eventMetadata;
 
   private TableMapEventPayload(Builder builder) {
     tableId = builder.tableId;
@@ -30,7 +29,7 @@ public class TableMapEventPayload implements ReplicationEventPayload {
     private List<ColumnType> columnTypes;
     private int[] columnMetadata;
     private BitSet columnNullability;
-    //private TableMapEventMetadata eventMetadata;
+    // private TableMapEventMetadata eventMetadata;
 
     public TableMapEventPayload build() {
       return new TableMapEventPayload(this);
@@ -86,4 +85,3 @@ public class TableMapEventPayload implements ReplicationEventPayload {
     return columnNullability;
   }
 }
-

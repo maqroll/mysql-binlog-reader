@@ -10,9 +10,6 @@ import com.github.mheath.netty.codec.mysql.ReplicationEventType;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Set;
@@ -20,6 +17,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** */
 public class ReplicationStreamDecoder extends AbstractPacketDecoder
@@ -88,15 +87,16 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
       case RESPONSE_OK:
         // TODO
         ReplicationEventHeader header = decodeHeader(packet);
-        if (ReplicationEventType.ROTATE_EVENT.equals(header.getEventType())) {
+        if (ReplicationEventType.ROTATE_EVENT.equals(header.getEventType())
+            || ReplicationEventType.TABLE_MAP_EVENT.equals(header.getEventType())) {
           int length = packet.readableBytes() - checksum.getValue();
           packet = packet.retainedSlice(0, length);
 
           parallelDeserializer.addPacket(header, packet, serverInfo.getChecksumType());
           LOGGER.info("Received " + header.getEventType());
-/*        if (parallelDeserializer.pending()) {
-          ctx.executor().schedule(() -> injectDeserializedMessages(ctx), 5, TimeUnit.MILLISECONDS);
-        }*/
+          /*        if (parallelDeserializer.pending()) {
+            ctx.executor().schedule(() -> injectDeserializedMessages(ctx), 5, TimeUnit.MILLISECONDS);
+          }*/
         }
         break;
       case RESPONSE_EOF:

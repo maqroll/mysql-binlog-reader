@@ -59,6 +59,6 @@ public class ReplicationInboundHandler extends ChannelInboundHandlerAdapter
 
   @Override
   public void visit(ReplicationEvent repEvent, ChannelHandlerContext ctx) {
-    LOGGER.info("Received replication event");
+    LOGGER.info("Received replication event {}", repEvent);
   }
 }

@@ -46,14 +46,12 @@ public enum ReplicationState {
     @Override
     ReplicationState ok(OkResponse ok, ChannelHandlerContext ctx) {
       ctx.channel().pipeline().remove("serverDecoder");
-      ctx.channel()
-          .pipeline()
-          .addFirst("replicationStreamDecoder", new ReplicationStreamDecoder());
+      ctx.channel().pipeline().addFirst("replicationStreamDecoder", new ReplicationStreamDecoder());
 
       BinlogDumpCommand binlogDumpCommand =
           BinlogDumpCommand.builder()
               .fileName("")
-              //.addFlags(BinlogDumpFlag.BINLOG_DUMP_NON_BLOCK)
+              // .addFlags(BinlogDumpFlag.BINLOG_DUMP_NON_BLOCK)
               .build();
       ctx.writeAndFlush(binlogDumpCommand);
 
