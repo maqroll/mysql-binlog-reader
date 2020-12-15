@@ -79,9 +79,65 @@ public class WriteRowsEventDeserializer
             length = meta;
           }
         }
-        result[index] = deserializeCell(ColumnType.byCode(typeCode), meta, length, inputStream);
+        result[index] = deserializeCell(ColumnType.lookup(typeCode), meta, length, buf);
       }
     }
     return result;
+  }
+
+  private Object deserializeCell(ColumnType type, int meta, int length, ByteBuf buf) {
+    switch (type) {
+      case MYSQL_TYPE_BIT:
+        return DeserializerUtils.deserializeBit(meta, buf);
+      case MYSQL_TYPE_TINY:
+        return DeserializerUtils.deserializeTiny(buf);
+      case MYSQL_TYPE_SHORT:
+        return DeserializerUtils.deserializeShort(buf);
+      case MYSQL_TYPE_INT24:
+        return DeserializerUtils.deserializeInt24(buf);
+      case MYSQL_TYPE_LONG:
+        return DeserializerUtils.deserializeLong(buf);
+      case MYSQL_TYPE_LONGLONG:
+        return DeserializerUtils.deserializeLongLong(buf);
+      case MYSQL_TYPE_FLOAT:
+        return DeserializerUtils.deserializeFloat(buf);
+      case MYSQL_TYPE_DOUBLE:
+        return DeserializerUtils.deserializeDouble(buf);
+      case MYSQL_TYPE_NEWDECIMAL:
+        return DeserializerUtils.deserializeNewDecimal(meta, buf);
+      case MYSQL_TYPE_DATE:
+        return DeserializerUtils.deserializeDate(buf);
+      case MYSQL_TYPE_TIME:
+        return DeserializerUtils.deserializeTime(buf);
+      case MYSQL_TYPE_TIME2:
+        return DeserializerUtils.deserializeTimeV2(meta, buf);
+      case MYSQL_TYPE_TIMESTAMP:
+        return DeserializerUtils.deserializeTimestamp(buf);
+      case MYSQL_TYPE_TIMESTAMP2:
+        return DeserializerUtils.deserializeTimestampV2(meta, buf);
+      case MYSQL_TYPE_DATETIME:
+        return DeserializerUtils.deserializeDatetime(buf);
+      case MYSQL_TYPE_DATETIME2:
+        return DeserializerUtils.deserializeDatetimeV2(meta, buf);
+      case MYSQL_TYPE_YEAR:
+        return DeserializerUtils.deserializeYear(buf);
+      case MYSQL_TYPE_STRING: // CHAR or BINARY
+        return DeserializerUtils.deserializeString(length, buf);
+      case MYSQL_TYPE_VARCHAR:
+      case MYSQL_TYPE_VAR_STRING: // VARCHAR or VARBINARY
+        return DeserializerUtils.deserializeVarString(meta, buf);
+      case MYSQL_TYPE_BLOB:
+        return DeserializerUtils.deserializeBlob(meta, buf);
+      case MYSQL_TYPE_ENUM:
+        return DeserializerUtils.deserializeEnum(length, buf);
+      case MYSQL_TYPE_SET:
+        return DeserializerUtils.deserializeSet(length, buf);
+      case MYSQL_TYPE_GEOMETRY:
+        return DeserializerUtils.deserializeGeometry(meta, buf);
+      case MYSQL_TYPE_JSON:
+        return DeserializerUtils.deserializeJson(meta, buf);
+      default:
+        throw new IllegalArgumentException("Unsupported type " + type);
+    }
   }
 }

@@ -3,7 +3,6 @@ package com.github.maqroll.deserializers;
 import com.github.maqroll.Utils;
 import com.github.mheath.netty.codec.mysql.CodecUtils;
 import io.netty.buffer.ByteBuf;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.sql.Date;
@@ -27,7 +26,7 @@ public class DeserializerUtils {
    followed by a 1 byte unsigned int representing the number of bytes occupied by the bitfield.
    The number of bytes is either int((length + 7) / 8) or int(length / 8).
   */
-  public static BitSet deserializeBit(int meta, ByteBuf buf) throws IOException {
+  public static BitSet deserializeBit(int meta, ByteBuf buf) {
     int bitSetLength = (meta >> 8) * 8 + (meta & 0xFF);
     return Utils.readBitSet(buf, bitSetLength);
   }
@@ -264,7 +263,7 @@ public class DeserializerUtils {
   }
 
   // DATETIME
-  public static java.util.Date deserializeDatetime(ByteBuf buf) throws IOException {
+  public static java.util.Date deserializeDatetime(ByteBuf buf) {
     long input = buf.readLongLE();
     int[] split = split(input, 100, 6);
     Long timestamp = asUnixTime(split[5], split[4], split[3], split[2], split[1], split[0], 0);
@@ -356,7 +355,7 @@ public class DeserializerUtils {
 
   // SET
   // TODO Apparently SET can't be in the binlog
-  public static Long deserializeSet(int length, ByteBuf buf) throws IOException {
+  public static Long deserializeSet(int length, ByteBuf buf) {
     // return inputStream.readLong(length);
     throw new IllegalStateException("SET type can't be in the binlog");
   }
