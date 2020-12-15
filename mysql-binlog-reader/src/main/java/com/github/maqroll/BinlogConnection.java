@@ -31,7 +31,7 @@ public class BinlogConnection {
     final ServerInfo serverInfo = new ServerInfo(null, ChecksumType.CRC32); // TODO
 
     eventLoopGroup = new NioEventLoopGroup();
-    eventLoopGroup.setIoRatio(1); //lag between deserialization and notification!!!
+    eventLoopGroup.setIoRatio(1); // lag between deserialization and notification!!!
     bootstrap = new Bootstrap();
     bootstrap.group(eventLoopGroup);
     bootstrap.channel(NioSocketChannel.class);

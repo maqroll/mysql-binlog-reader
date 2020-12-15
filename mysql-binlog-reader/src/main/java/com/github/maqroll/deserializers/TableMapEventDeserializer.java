@@ -1,6 +1,7 @@
 package com.github.maqroll.deserializers;
 
 import com.github.maqroll.TableMapEventPayload;
+import com.github.maqroll.Utils;
 import com.github.mheath.netty.codec.mysql.CodecUtils;
 import com.github.mheath.netty.codec.mysql.ColumnType;
 import io.netty.buffer.ByteBuf;
@@ -8,7 +9,6 @@ import io.netty.channel.Channel;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 
 public class TableMapEventDeserializer
@@ -30,11 +30,8 @@ public class TableMapEventDeserializer
     }
     builder.columnTypes(columnTypes);
     int metadataBlockSize = (int) CodecUtils.readLengthEncodedInteger(buf);
-    buf.skipBytes(metadataBlockSize); // TODO probably not needed
-    int nullSize = (int) ((numberOfColumns + 8) / 7);
-    byte[] nullsBytes = new byte[nullSize];
-    buf.readBytes(nullsBytes);
-    builder.columnNullability(BitSet.valueOf(nullsBytes));
+    buf.skipBytes(metadataBlockSize); // TODO at least decode column names
+    builder.columnNullability(Utils.readBitSet(buf,(int) numberOfColumns));
 
     // in MySQL could be followed by optional metadata
     // https://dev.mysql.com/doc/dev/mysql-server/latest/classbinary__log_1_1Table__map__event.html#Table_table_map_event_column_types

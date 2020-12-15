@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 public class AppTest {
   private static final String HOST = "localhost";
-  private static final int PORT = /*Integer.parseInt(System.getProperty("mysql1.port"))*/ 32780;
+  private static final int PORT = /*Integer.parseInt(System.getProperty("mysql1.port"))*/ 55000;
   private static final String DB = "test_db";
   private static final String TBL = "table1";
   private static final String LOCAL_URL = "jdbc:mariadb://" + HOST + ":" + PORT + "/" + DB;

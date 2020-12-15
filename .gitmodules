@@ -1,3 +1,6 @@
 [submodule "netty-mysql-codec"]
 	path = netty-mysql-codec
 	url = https://github.com/maqroll/netty-mysql-codec.git
+[submodule "mysql-binlog-connector-java"]
+	path = mysql-binlog-connector-java
+	url = https://github.com/maqroll/mysql-binlog-connector-java

@@ -19,6 +19,7 @@ public class TableMapEventPayload implements ReplicationEventPayload {
   // private final int[] columnMetadata;
   private final BitSet columnNullability;
   // private TableMapEventMetadata eventMetadata;
+  // TODO add column names
 
   private TableMapEventPayload(Builder builder) {
     tableId = builder.tableId;
