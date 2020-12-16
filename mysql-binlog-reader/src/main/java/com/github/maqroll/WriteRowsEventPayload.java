@@ -100,15 +100,5 @@ public class WriteRowsEventPayload implements ReplicationEventPayload, RowsChang
   @Override
   public void accept(RowsChangedVisitor visitor) {
     visitor.added(tableMap.getDatabase(), tableMap.getTable(), rowStream);
-
-    /*for (Object[] row : rows) {
-      // FIXME
-      for (int i=0; i < row.length; i++) {
-        visitor.columnAddedRow(tableMap.getDatabase(), tableMap.getTable(), columnsPresent.get(i), tableMap.getColumnTypes().get(i));
-      }
-    }
-
-    visitor.endAddedRow(tableMap.getDatabase(), tableMap.getTable()); // TODO commit pos ??
-     */
   }
 }
