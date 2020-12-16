@@ -14,6 +14,7 @@ import java.util.EnumSet;
 
 public class BinlogConnection {
   private final NioEventLoopGroup eventLoopGroup;
+  private final NioEventLoopGroup secondaryEventLoopGroup;
   private final Bootstrap bootstrap;
   protected static final EnumSet<CapabilityFlags> CLIENT_CAPABILITIES =
       CapabilityFlags.getImplicitCapabilities();
@@ -31,6 +32,7 @@ public class BinlogConnection {
     final ServerInfo serverInfo = new ServerInfo(null, ChecksumType.CRC32); // TODO
 
     eventLoopGroup = new NioEventLoopGroup();
+    secondaryEventLoopGroup = new NioEventLoopGroup();
     eventLoopGroup.setIoRatio(1); // lag between deserialization and notification!!!
     bootstrap = new Bootstrap();
     bootstrap.group(eventLoopGroup);
@@ -46,7 +48,7 @@ public class BinlogConnection {
             ch.pipeline().addLast("clientEncoder", new MysqlClientPacketEncoder());
             ch.pipeline().addLast("binlogEncoder", new BinlogDumpEncoder());
             // TODO add the rest of handlers
-            ch.pipeline().addLast("adapter", replicationInboundHandler);
+            ch.pipeline().addLast(secondaryEventLoopGroup,"adapter", replicationInboundHandler);
           }
         });
 
