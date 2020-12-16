@@ -88,9 +88,11 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
         // TODO
         ReplicationEventHeader header = decodeHeader(packet);
         if (ReplicationEventType.ROTATE_EVENT.equals(header.getEventType())
-            || ReplicationEventType.TABLE_MAP_EVENT.equals(header.getEventType())) {
+            || ReplicationEventType.TABLE_MAP_EVENT.equals(header.getEventType())
+            || ReplicationEventType.WRITE_ROWS_EVENTv1.equals(header.getEventType())) {
           int length = packet.readableBytes() - checksum.getValue();
-          packet = packet.retainedSlice(0, length);
+          packet = packet.retainedSlice(packet.readerIndex(), length);
+          // System.out.println(ByteBufUtil.prettyHexDump(packet));
 
           parallelDeserializer.addPacket(header, packet, serverInfo.getChecksumType(), channel);
           LOGGER.info("Received " + header.getEventType());

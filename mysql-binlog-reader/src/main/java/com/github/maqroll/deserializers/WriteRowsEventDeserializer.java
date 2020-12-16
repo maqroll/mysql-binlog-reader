@@ -10,15 +10,20 @@ import io.netty.channel.Channel;
 import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WriteRowsEventDeserializer
     implements ReplicationEventPayloadDeserializer<WriteRowsEventPayload> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(WriteRowsEventDeserializer.class);
 
   @Override
   public WriteRowsEventPayload deserialize(ByteBuf buf, Channel ch) {
     final TableMapEventPayload tableMapEventPayload = TableMapEventPayload.getCurrent(ch);
 
     final WriteRowsEventPayload.Builder builder = WriteRowsEventPayload.builder();
+
+    // System.out.println(ByteBufUtil.prettyHexDump(buf));
 
     buf.skipBytes(6); // TODO we could check that tableId is ok
     buf.skipBytes(2); // flags

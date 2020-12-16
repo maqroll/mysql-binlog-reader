@@ -10,6 +10,15 @@ public class Utils {
     int bytesSize = (int) ((bits + 7) / 8);
     byte[] bytes = new byte[bytesSize];
     buf.readBytes(bytes);
-    return BitSet.valueOf(bytes);
+
+    // clear
+    BitSet clear = new BitSet(bits);
+    for (int i = 0; i < bits; i++) {
+      clear.set(i);
+    }
+
+    BitSet res = BitSet.valueOf(bytes);
+    res.and(clear);
+    return res;
   }
 }

@@ -3,6 +3,7 @@ package com.github.maqroll;
 import com.github.maqroll.deserializers.ReplicationEventPayloadDeserializer;
 import com.github.maqroll.deserializers.RotateEventDeserializer;
 import com.github.maqroll.deserializers.TableMapEventDeserializer;
+import com.github.maqroll.deserializers.WriteRowsEventDeserializer;
 import com.github.mheath.netty.codec.mysql.ReplicationEvent;
 import com.github.mheath.netty.codec.mysql.ReplicationEventHeader;
 import com.github.mheath.netty.codec.mysql.ReplicationEventPayload;
@@ -47,6 +48,7 @@ public class ParallelDeserializer {
 
     deserializers.put(ReplicationEventType.ROTATE_EVENT, new RotateEventDeserializer());
     deserializers.put(ReplicationEventType.TABLE_MAP_EVENT, new TableMapEventDeserializer());
+    deserializers.put(ReplicationEventType.WRITE_ROWS_EVENTv1, new WriteRowsEventDeserializer());
 
     if (capacity < 1) {
       throw new IllegalArgumentException(
@@ -133,6 +135,7 @@ public class ParallelDeserializer {
                   final ReplicationEventPayloadDeserializer<?> deserializer =
                       deserializers.get(header.getEventType());
                   ReplicationEventPayload payload = deserializer.deserialize(buf, ch);
+
                   return new ReplicationEvent() {
                     @Override
                     public ReplicationEventHeader header() {

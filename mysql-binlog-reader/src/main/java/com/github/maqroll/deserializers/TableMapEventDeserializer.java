@@ -17,7 +17,7 @@ public class TableMapEventDeserializer
   public TableMapEventPayload deserialize(ByteBuf buf, Channel ch) {
     final TableMapEventPayload.Builder builder = TableMapEventPayload.builder();
 
-    builder.tableId(CodecUtils.readUnsignedLongLE(buf, 6));
+    builder.tableId(CodecUtils.readUnsignedLongLE6(buf));
     buf.skipBytes(3);
     builder.database(CodecUtils.readNullTerminatedString(buf, Charset.defaultCharset())); // TODO
     buf.skipBytes(1);
@@ -32,9 +32,10 @@ public class TableMapEventDeserializer
     builder.columnMetadata(readMetadata(buf, columnTypes));
     builder.columnNullability(Utils.readBitSet(buf, (int) numberOfColumns));
 
-    // TODO at least decode column names
+    // TODO at least decode column names (in MySQL, not in MariaDB)
     // in MySQL could be followed by optional metadata
     // https://dev.mysql.com/doc/dev/mysql-server/latest/classbinary__log_1_1Table__map__event.html#Table_table_map_event_column_types
+    // In MariaDB there is no column names/signedness in metadata.
     return builder.build();
   }
 
@@ -65,7 +66,7 @@ public class TableMapEventDeserializer
           metadata.add(new Integer(buf.readUnsignedByte()));
           break;
         default:
-          metadata.add(null);
+          metadata.add(new Integer(0));
       }
     }
     return metadata;
