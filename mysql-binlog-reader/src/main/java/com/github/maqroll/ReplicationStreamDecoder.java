@@ -1,17 +1,24 @@
 package com.github.maqroll;
 
+import com.github.maqroll.deserializers.ReplicationEventPayloadDeserializer;
+import com.github.maqroll.deserializers.RotateEventDeserializer;
+import com.github.maqroll.deserializers.TableMapEventDeserializer;
+import com.github.maqroll.deserializers.WriteRowsEventDeserializer;
 import com.github.mheath.netty.codec.mysql.AbstractPacketDecoder;
 import com.github.mheath.netty.codec.mysql.CapabilityFlags;
 import com.github.mheath.netty.codec.mysql.MysqlCharacterSet;
 import com.github.mheath.netty.codec.mysql.MysqlServerPacketDecoder;
 import com.github.mheath.netty.codec.mysql.ReplicationEvent;
 import com.github.mheath.netty.codec.mysql.ReplicationEventHeader;
+import com.github.mheath.netty.codec.mysql.ReplicationEventPayload;
 import com.github.mheath.netty.codec.mysql.ReplicationEventType;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -27,6 +34,8 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
 
   private final AtomicBoolean init = new AtomicBoolean();
   private ParallelDeserializer parallelDeserializer;
+  private final Map<ReplicationEventType, ReplicationEventPayloadDeserializer<?>> deserializers =
+      new HashMap<>();
 
   public ReplicationStreamDecoder() {
     this(DEFAULT_MAX_PACKET_SIZE);
@@ -34,10 +43,13 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
 
   public ReplicationStreamDecoder(int maxPacketSize) {
     super(maxPacketSize);
+    deserializers.put(ReplicationEventType.ROTATE_EVENT, new RotateEventDeserializer());
+    deserializers.put(ReplicationEventType.TABLE_MAP_EVENT, new TableMapEventDeserializer());
+    deserializers.put(ReplicationEventType.WRITE_ROWS_EVENTv1, new WriteRowsEventDeserializer());
   }
 
   private void init(ChannelHandlerContext ctx) {
-    parallelDeserializer = new ParallelDeserializer(10, ctx);
+    parallelDeserializer = new ParallelDeserializer(1, ctx);
     init.set(true);
   }
 
@@ -91,14 +103,27 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
             || ReplicationEventType.TABLE_MAP_EVENT.equals(header.getEventType())
             || ReplicationEventType.WRITE_ROWS_EVENTv1.equals(header.getEventType())) {
           int length = packet.readableBytes() - checksum.getValue();
-          packet = packet.retainedSlice(packet.readerIndex(), length);
+          // packet = packet.readRetainedSlice(length);
           // System.out.println(ByteBufUtil.prettyHexDump(packet));
 
-          parallelDeserializer.addPacket(header, packet, serverInfo.getChecksumType(), channel);
+          // System.out.println("." + packet.refCnt());
+          // parallelDeserializer.addPacket(
+          //    header, packet.retainedSlice(packet.readerIndex(),length),
+          // serverInfo.getChecksumType(), channel);
           LOGGER.info("Received " + header.getEventType());
           /*        if (parallelDeserializer.pending()) {
             ctx.executor().schedule(() -> injectDeserializedMessages(ctx), 5, TimeUnit.MILLISECONDS);
           }*/
+          final ReplicationEventPayloadDeserializer<?> deserializer =
+              deserializers.get(header.getEventType());
+          ReplicationEventPayload payload =
+              deserializer.deserialize(packet.readSlice(length), ctx.channel());
+
+          if (header.getEventType().equals(ReplicationEventType.TABLE_MAP_EVENT)) {
+            ((TableMapEventPayload) payload).setCurrent(ctx.channel());
+          }
+          out.add(new ReplicationEventImpl(header, payload));
+          packet.skipBytes(checksum.getValue());
         }
         break;
       case RESPONSE_EOF:

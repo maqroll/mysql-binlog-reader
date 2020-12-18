@@ -2,7 +2,6 @@ package com.github.maqroll;
 
 import com.github.mheath.netty.codec.mysql.ReplicationEventPayload;
 import com.github.mheath.netty.codec.mysql.Row;
-import com.github.mheath.netty.codec.mysql.RowVisitor;
 import com.github.mheath.netty.codec.mysql.RowsChangedVisitable;
 import com.github.mheath.netty.codec.mysql.RowsChangedVisitor;
 import java.util.ArrayList;
@@ -14,7 +13,7 @@ public class WriteRowsEventPayload implements ReplicationEventPayload, RowsChang
   private final TableMapEventPayload tableMap;
   private final long columnCount;
   private final BitSet columnsSent;
-  private final List<Object[]> rows; // TODO change for something more visitor-friendly
+  private final List<Row /*Object[]*/> rows; // TODO change for something more visitor-friendly
   private final List<Integer> columnsPresent;
   private final Stream<Row> rowStream;
 
@@ -31,26 +30,16 @@ public class WriteRowsEventPayload implements ReplicationEventPayload, RowsChang
       }
     }
 
-    rowStream =
-        rows.stream()
-            .map(
-                row -> {
-                  return new Row() {
-                    @Override
-                    public void accept(RowVisitor visitor) {
-                      for (int i = 0; i < row.length; i++) {
-                        visitor.visit(columnsPresent.get(i), tableMap.getColumnTypes().get(i));
-                      }
-                    }
-                  };
-                });
+    // TODO y si guardamos Row en lugar de Object[] en rows???
+    // el stream no necesitaría mapear.
+    rowStream = rows.stream();
   }
 
   public static class Builder {
     private TableMapEventPayload tableMap;
     private long columnCount;
     private BitSet columnsSent;
-    private List<Object[]> rows;
+    private List<Row /*Object[]*/> rows;
 
     public WriteRowsEventPayload build() {
       return new WriteRowsEventPayload(this);
@@ -71,7 +60,7 @@ public class WriteRowsEventPayload implements ReplicationEventPayload, RowsChang
       return this;
     }
 
-    public Builder rows(List<Object[]> rows) {
+    public Builder rows(List<Row /*Object[]*/> rows) {
       this.rows = rows;
       return this;
     }
@@ -93,7 +82,7 @@ public class WriteRowsEventPayload implements ReplicationEventPayload, RowsChang
     return columnsSent;
   }
 
-  public List<Object[]> getRows() {
+  public List<Row /*Object[]*/> getRows() {
     return rows;
   }
 

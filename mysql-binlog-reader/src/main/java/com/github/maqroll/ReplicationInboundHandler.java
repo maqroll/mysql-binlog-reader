@@ -1,5 +1,7 @@
 package com.github.maqroll;
 
+import com.github.mheath.netty.codec.mysql.ColumnCount;
+import com.github.mheath.netty.codec.mysql.ColumnDefinition;
 import com.github.mheath.netty.codec.mysql.ColumnType;
 import com.github.mheath.netty.codec.mysql.EofResponse;
 import com.github.mheath.netty.codec.mysql.ErrorResponse;
@@ -7,8 +9,8 @@ import com.github.mheath.netty.codec.mysql.Handshake;
 import com.github.mheath.netty.codec.mysql.MysqlServerPacketVisitor;
 import com.github.mheath.netty.codec.mysql.OkResponse;
 import com.github.mheath.netty.codec.mysql.ReplicationEvent;
+import com.github.mheath.netty.codec.mysql.ResultsetRow;
 import com.github.mheath.netty.codec.mysql.Row;
-import com.github.mheath.netty.codec.mysql.RowVisitor;
 import com.github.mheath.netty.codec.mysql.RowsChangedVisitable;
 import com.github.mheath.netty.codec.mysql.RowsChangedVisitor;
 import com.github.mheath.netty.codec.mysql.Visitable;
@@ -22,6 +24,7 @@ public class ReplicationInboundHandler extends ChannelInboundHandlerAdapter
     implements MysqlServerPacketVisitor {
   private static final Logger LOGGER = LoggerFactory.getLogger(ReplicationInboundHandler.class);
   private ReplicationState replicationState = ReplicationState.INIT;
+  private long c = 0L;
 
   public ReplicationInboundHandler() {}
 
@@ -64,12 +67,27 @@ public class ReplicationInboundHandler extends ChannelInboundHandlerAdapter
   }
 
   @Override
+  public void visit(ColumnCount columnCount, ChannelHandlerContext ctx) {
+    replicationState = replicationState.columnCount(columnCount, ctx);
+  }
+
+  @Override
+  public void visit(ColumnDefinition columnDefinition, ChannelHandlerContext ctx) {
+    replicationState = replicationState.columnDefinition(columnDefinition, ctx);
+  }
+
+  @Override
+  public void visit(ResultsetRow row, ChannelHandlerContext ctx) {
+    replicationState = replicationState.resultSetRow(row, ctx);
+  }
+
+  @Override
   public void visit(ReplicationEvent repEvent, ChannelHandlerContext ctx) {
     // LOGGER.info("Received replication event {}", repEvent);
+
     final RowsChangedVisitable payload = (RowsChangedVisitable) repEvent.payload();
     payload.accept(
         new RowsChangedVisitor() {
-
           @Override
           public void columnAddedRow(String db, String table, int colIdx, ColumnType type) {}
 
@@ -79,14 +97,15 @@ public class ReplicationInboundHandler extends ChannelInboundHandlerAdapter
           @Override
           public void added(String db, String table, Stream<Row> rows) {
             rows.forEach(
-                row ->
-                    row.accept(
-                        new RowVisitor() {
-                          @Override
-                          public void visit(int idx, ColumnType type) {
-                            LOGGER.info("{}.{} {} {}", db, table, idx, type.toString());
-                          }
-                        }));
+                row -> {
+                  System.out.println(c++);
+                  /*row.accept(
+                  new RowVisitor() {
+                    @Override
+                    public void visit(int idx, ColumnType type) {
+                      LOGGER.info("{}.{} {} {}", db, table, idx, type.toString());
+                    }*/
+                });
           }
         });
   }

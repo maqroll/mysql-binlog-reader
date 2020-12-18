@@ -2,15 +2,21 @@ package com.github.maqroll;
 
 import static com.github.maqroll.BinlogConnection.CLIENT_CAPABILITIES;
 
+import com.github.mheath.netty.codec.mysql.ColumnCount;
+import com.github.mheath.netty.codec.mysql.ColumnDefinition;
 import com.github.mheath.netty.codec.mysql.Constants;
 import com.github.mheath.netty.codec.mysql.EofResponse;
 import com.github.mheath.netty.codec.mysql.ErrorResponse;
 import com.github.mheath.netty.codec.mysql.Handshake;
 import com.github.mheath.netty.codec.mysql.HandshakeResponse;
 import com.github.mheath.netty.codec.mysql.MysqlNativePasswordUtil;
+import com.github.mheath.netty.codec.mysql.MysqlServerResultSetPacketDecoder;
 import com.github.mheath.netty.codec.mysql.OkResponse;
 import com.github.mheath.netty.codec.mysql.QueryCommand;
+import com.github.mheath.netty.codec.mysql.ResultsetRow;
 import io.netty.channel.ChannelHandlerContext;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,9 +29,11 @@ public enum ReplicationState {
       HandshakeResponse response =
           HandshakeResponse.create()
               .addCapabilities(CLIENT_CAPABILITIES)
-              .username("root")
+              .username("ucelrep") /* ucelrep */
               .addAuthData(
-                  MysqlNativePasswordUtil.hashPassword("root", handshake.getAuthPluginData()))
+                  MysqlNativePasswordUtil.hashPassword(
+                      /*"R5.Ad[KiLhm4lx3W"*/ "D8]+_J-8Wa.w]]2i" /*"root"*/,
+                      handshake.getAuthPluginData()))
               .authPluginName(Constants.MYSQL_NATIVE_PASSWORD)
               .build();
       ctx.writeAndFlush(response);
@@ -36,10 +44,53 @@ public enum ReplicationState {
   WAITING_HANDSHAKE_RESPONSE {
     @Override
     ReplicationState ok(OkResponse ok, ChannelHandlerContext ctx) {
-      QueryCommand query =
-          new QueryCommand(0, "set @master_binlog_checksum= @@global.binlog_checksum");
+      ctx.pipeline()
+          .replace("serverDecoder", "serverDecoder", new MysqlServerResultSetPacketDecoder());
+      QueryCommand query = new QueryCommand(0, "show global variables like 'binlog_checksum'");
       ctx.writeAndFlush(query);
-      return WAITING_CHECKSUM_CONFIRMATION;
+      return WAITING_CHECKSUM_RESPONSE;
+    }
+  },
+  WAITING_CHECKSUM_RESPONSE {
+    // FIXME store in context
+    private List<ResultsetRow> rows = new ArrayList<>();
+    // FIXME
+    private boolean next = false;
+
+    @Override
+    ReplicationState columnCount(ColumnCount columnCount, ChannelHandlerContext ctx) {
+      return this;
+    }
+
+    @Override
+    ReplicationState columnDefinition(
+        ColumnDefinition columnDefinition, ChannelHandlerContext ctx) {
+      return this;
+    }
+
+    @Override
+    ReplicationState resultSetRow(ResultsetRow resultsetRow, ChannelHandlerContext ctx) {
+      LOGGER.info(" RS {}", resultsetRow.toString());
+      rows.add(resultsetRow);
+      return this;
+    }
+
+    @Override
+    ReplicationState eof(EofResponse eof, ChannelHandlerContext ctx) {
+      // Recibimos 2 EOF (depende)
+      if (!next) {
+        next = true;
+        return this;
+      } else {
+        LOGGER.info(rows.get(0).getValues().get(1));
+
+        ctx.pipeline()
+            .replace("serverDecoder", "serverDecoder", new MysqlServerResultSetPacketDecoder());
+        QueryCommand query =
+            new QueryCommand(0, "set @master_binlog_checksum= @@global.binlog_checksum");
+        ctx.writeAndFlush(query);
+        return WAITING_CHECKSUM_CONFIRMATION;
+      }
     }
   },
   WAITING_CHECKSUM_CONFIRMATION {
@@ -78,5 +129,17 @@ public enum ReplicationState {
 
   ReplicationState error(ErrorResponse error, ChannelHandlerContext ctx) {
     throw new IllegalStateException("Unexpected error message in state " + this);
+  }
+
+  ReplicationState columnCount(ColumnCount columnCount, ChannelHandlerContext ctx) {
+    throw new IllegalStateException("Unexpected column count message in state " + this);
+  }
+
+  ReplicationState columnDefinition(ColumnDefinition columnDefinition, ChannelHandlerContext ctx) {
+    throw new IllegalStateException("Unexpected column definition message in state " + this);
+  }
+
+  ReplicationState resultSetRow(ResultsetRow resultsetRow, ChannelHandlerContext ctx) {
+    throw new IllegalStateException("Unexpected row message in state " + this);
   }
 }

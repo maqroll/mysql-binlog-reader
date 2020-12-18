@@ -1,12 +1,15 @@
 package com.github.maqroll.deserializers;
 
+import com.github.maqroll.RowImpl;
 import com.github.maqroll.TableMapEventPayload;
 import com.github.maqroll.Utils;
 import com.github.maqroll.WriteRowsEventPayload;
 import com.github.mheath.netty.codec.mysql.CodecUtils;
 import com.github.mheath.netty.codec.mysql.ColumnType;
+import com.github.mheath.netty.codec.mysql.Row;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,22 +37,37 @@ public class WriteRowsEventDeserializer
     builder.tableMap(tableMapEventPayload);
     builder.columnCount(columnCount);
     builder.columnsSent(columnsSent);
-    builder.rows(deserializeRows(tableMapEventPayload, columnsSent, buf));
+
+    List<Integer> columnsPresent = new ArrayList<>();
+    for (int c = 0; c < (int) columnCount; c++) { // FIXME ¿columnCount could be greater than int?
+      if (columnsSent.get(c)) {
+        columnsPresent.add(c);
+      }
+    }
+
+    builder.rows(deserializeRows(tableMapEventPayload, columnsSent, buf, columnsPresent));
+    // builder.rows(new ArrayList<Object[]>());
     return builder.build();
   }
 
-  private List<Object[]> deserializeRows(
-      TableMapEventPayload tableMap, BitSet includedColumns, ByteBuf buf) {
-    List<Object[]> result = new LinkedList<Object[]>();
+  private List<Row /*Object[]*/> deserializeRows(
+      TableMapEventPayload tableMap,
+      BitSet includedColumns,
+      ByteBuf buf,
+      List<Integer> columnsPresent) {
+    List<Row /*Object[]*/> result = new LinkedList<Row /*Object[]*/>();
     while (buf.isReadable()) {
-      result.add(deserializeRow(tableMap, includedColumns, buf));
+      result.add(deserializeRow(tableMap, includedColumns, buf, columnsPresent));
     }
     return result;
   }
 
   // TODO move to a common hierarchy of row deserializers
-  protected Object[] deserializeRow(
-      TableMapEventPayload tableMap, BitSet includedColumns, ByteBuf buf) {
+  protected /*Object[]*/ Row deserializeRow(
+      TableMapEventPayload tableMap,
+      BitSet includedColumns,
+      ByteBuf buf,
+      List<Integer> columnsPresent) {
     List<ColumnType> types = tableMap.getColumnTypes();
     List<Integer> metadata = tableMap.getColumnMetadata();
     Object[] result = new Object[includedColumns.cardinality()];
@@ -87,7 +105,8 @@ public class WriteRowsEventDeserializer
         result[index] = deserializeCell(ColumnType.lookup(typeCode), meta, length, buf);
       }
     }
-    return result;
+    // return result;
+    return new RowImpl(tableMap, columnsPresent, result);
   }
 
   private Object deserializeCell(ColumnType type, int meta, int length, ByteBuf buf) {
