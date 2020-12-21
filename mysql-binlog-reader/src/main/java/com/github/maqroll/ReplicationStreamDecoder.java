@@ -80,7 +80,7 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
     if (!init.get()) init(ctx);
     final Channel channel = ctx.channel();
     final Set<CapabilityFlags> capabilities = CapabilityFlags.getCapabilitiesAttr(channel);
-    final ServerInfo serverInfo = ServerInfo.getServerInfoAttr(channel);
+    final ServerInfo serverInfo = ServerInfo.getCurrent(channel);
     final ChecksumType checksum = serverInfo.getChecksumType();
     final Charset serverCharset = MysqlCharacterSet.getServerCharsetAttr(channel).getCharset();
 

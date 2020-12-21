@@ -47,6 +47,6 @@ public class AppTest {
 
   @Test
   public void shouldAnswerWithTrue() {
-    new BinlogConnection(PORT);
+    new BinlogConnection(new Endpoint("localhost", 54, "user", "password"));
   }
 }

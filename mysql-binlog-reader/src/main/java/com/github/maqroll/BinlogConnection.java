@@ -27,9 +27,9 @@ public class BinlogConnection {
             CapabilityFlags.CLIENT_CONNECT_WITH_DB));
   }
 
-  public BinlogConnection(int port) {
+  public BinlogConnection(Endpoint endpoint) {
     final ReplicationInboundHandler replicationInboundHandler = new ReplicationInboundHandler();
-    final ServerInfo serverInfo = new ServerInfo(null, ChecksumType.CRC32); // TODO
+    final ServerInfo serverInfo = new ServerInfo(endpoint); // TODO
 
     eventLoopGroup = new NioEventLoopGroup();
     secondaryEventLoopGroup = new NioEventLoopGroup();
@@ -42,17 +42,17 @@ public class BinlogConnection {
           @Override
           public void initChannel(SocketChannel ch) throws Exception {
             CapabilityFlags.setCapabilitiesAttr(ch, CLIENT_CAPABILITIES);
-            ServerInfo.setServerInfoAttr(ch, serverInfo);
+            serverInfo.setCurrent(ch);
 
             ch.pipeline().addLast("serverDecoder", new MysqlServerConnectionPacketDecoder());
             ch.pipeline().addLast("clientEncoder", new MysqlClientPacketEncoder());
             ch.pipeline().addLast("binlogEncoder", new BinlogDumpEncoder());
             // TODO add the rest of handlers
-            ch.pipeline().addLast(secondaryEventLoopGroup,"adapter", replicationInboundHandler);
+            ch.pipeline().addLast(secondaryEventLoopGroup, "adapter", replicationInboundHandler);
           }
         });
 
-    ChannelFuture connectFuture = bootstrap.connect("localhost", port);
+    ChannelFuture connectFuture = bootstrap.connect(endpoint.getHost(), endpoint.getPort());
 
     connectFuture = connectFuture.awaitUninterruptibly();
     if (!connectFuture.isSuccess()) {

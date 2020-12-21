@@ -7,27 +7,26 @@ import io.netty.util.AttributeKey;
 public class ServerInfo {
   private static final AttributeKey<ServerInfo> key =
       AttributeKey.newInstance(ServerInfo.class.getName());
-  private final BinlogClient client;
-  private ChecksumType checksumType;
+  private final Endpoint endpoint;
+  private ChecksumType checksumType = null;
 
-  public ServerInfo(BinlogClient client, ChecksumType checksumType) {
-    this.client = client;
-    this.checksumType = checksumType;
+  public ServerInfo(Endpoint endpoint) {
+    this.endpoint = endpoint;
   }
 
   public void setChecksumType(ChecksumType checksumType) {
     this.setChecksumType(checksumType);
   }
 
-  public BinlogClient getClient() {
-    return client;
+  public Endpoint getEndpoint() {
+    return endpoint;
   }
 
   public ChecksumType getChecksumType() {
     return checksumType;
   }
 
-  public static ServerInfo getServerInfoAttr(Channel channel) {
+  public static ServerInfo getCurrent(Channel channel) {
     final Attribute<ServerInfo> attr = channel.attr(key);
     if (attr.get() == null) {
       throw new IllegalStateException("Channel initialized without server info");
@@ -35,8 +34,8 @@ public class ServerInfo {
     return attr.get();
   }
 
-  public static void setServerInfoAttr(Channel channel, ServerInfo serverInfo) {
+  public void setCurrent(Channel channel) {
     final Attribute<ServerInfo> attr = channel.attr(key);
-    attr.set(serverInfo);
+    attr.set(this);
   }
 }

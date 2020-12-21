@@ -8,10 +8,7 @@ import java.util.Objects;
  * How? A ClientHub class that allows to wait for all, stop if any, etc.... and reuse threads.
  */
 public class BinlogClient {
-  private final String host;
-  private final int port;
-  private final String user;
-  private final String password;
+  private final Endpoint endpoint;
 
   public static class Builder {
 
@@ -37,10 +34,7 @@ public class BinlogClient {
   }
 
   private BinlogClient(Builder builder) {
-    this.host = builder.host;
-    this.port = builder.port;
-    this.user = builder.user;
-    this.password = builder.password;
+    endpoint = new Endpoint(builder.host, builder.port, builder.user, builder.password);
   }
 
   public void connect() {

@@ -1,6 +1,7 @@
 package com.github.maqroll;
 
 import static com.github.maqroll.BinlogConnection.CLIENT_CAPABILITIES;
+import static com.github.mheath.netty.codec.mysql.CapabilityFlags.CLIENT_DEPRECATE_EOF;
 
 import com.github.mheath.netty.codec.mysql.ColumnCount;
 import com.github.mheath.netty.codec.mysql.ColumnDefinition;
@@ -15,7 +16,6 @@ import com.github.mheath.netty.codec.mysql.OkResponse;
 import com.github.mheath.netty.codec.mysql.QueryCommand;
 import com.github.mheath.netty.codec.mysql.ResultsetRow;
 import io.netty.channel.ChannelHandlerContext;
-import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,15 +25,17 @@ public enum ReplicationState {
     @Override
     ReplicationState handshake(Handshake handshake, ChannelHandlerContext ctx) {
       LOGGER.info("Sending handshake response");
-      // TODO user and password should be get from channel
+
+      ServerInfo serverInfo = ServerInfo.getCurrent(ctx.channel());
+
       HandshakeResponse response =
           HandshakeResponse.create()
               .addCapabilities(CLIENT_CAPABILITIES)
-              .username("ucelrep") /* ucelrep */
+              .addCapabilities(CLIENT_DEPRECATE_EOF)
+              .username(serverInfo.getEndpoint().getUser())
               .addAuthData(
                   MysqlNativePasswordUtil.hashPassword(
-                      /*"R5.Ad[KiLhm4lx3W"*/ "D8]+_J-8Wa.w]]2i" /*"root"*/,
-                      handshake.getAuthPluginData()))
+                      serverInfo.getEndpoint().getPassword(), handshake.getAuthPluginData()))
               .authPluginName(Constants.MYSQL_NATIVE_PASSWORD)
               .build();
       ctx.writeAndFlush(response);
@@ -52,11 +54,6 @@ public enum ReplicationState {
     }
   },
   WAITING_CHECKSUM_RESPONSE {
-    // FIXME store in context
-    private List<ResultsetRow> rows = new ArrayList<>();
-    // FIXME
-    private boolean next = false;
-
     @Override
     ReplicationState columnCount(ColumnCount columnCount, ChannelHandlerContext ctx) {
       return this;
@@ -70,27 +67,34 @@ public enum ReplicationState {
 
     @Override
     ReplicationState resultSetRow(ResultsetRow resultsetRow, ChannelHandlerContext ctx) {
-      LOGGER.info(" RS {}", resultsetRow.toString());
-      rows.add(resultsetRow);
+      ResultSet.getCurrent(ctx.channel()).addRow(resultsetRow);
       return this;
     }
 
     @Override
-    ReplicationState eof(EofResponse eof, ChannelHandlerContext ctx) {
-      // Recibimos 2 EOF (depende)
-      if (!next) {
-        next = true;
-        return this;
-      } else {
-        LOGGER.info(rows.get(0).getValues().get(1));
+    ReplicationState ok(OkResponse ok, ChannelHandlerContext ctx) {
+      ResultSet rs = ResultSet.getCurrent(ctx.channel());
 
-        ctx.pipeline()
-            .replace("serverDecoder", "serverDecoder", new MysqlServerResultSetPacketDecoder());
-        QueryCommand query =
-            new QueryCommand(0, "set @master_binlog_checksum= @@global.binlog_checksum");
-        ctx.writeAndFlush(query);
-        return WAITING_CHECKSUM_CONFIRMATION;
+      List<ResultsetRow> rows = rs.rows();
+      if (rows.size() == 1) {
+        String checksum = rows.get(0).getValues().get(1);
+        ChecksumType checksumType = ChecksumType.valueOf(checksum);
+
+        if (checksumType == null) {
+          throw new IllegalArgumentException("binlog_checksum value not supported: " + checksum);
+        }
+
+        ServerInfo.getCurrent(ctx.channel()).setChecksumType(checksumType);
+      } else {
+        ServerInfo.getCurrent(ctx.channel()).setChecksumType(ChecksumType.NONE);
       }
+
+      ctx.pipeline()
+          .replace("serverDecoder", "serverDecoder", new MysqlServerResultSetPacketDecoder());
+      QueryCommand query =
+          new QueryCommand(0, "set @master_binlog_checksum= @@global.binlog_checksum");
+      ctx.writeAndFlush(query);
+      return WAITING_CHECKSUM_CONFIRMATION;
     }
   },
   WAITING_CHECKSUM_CONFIRMATION {
