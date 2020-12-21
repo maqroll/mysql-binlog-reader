@@ -98,7 +98,7 @@ public class ReplicationInboundHandler extends ChannelInboundHandlerAdapter
           public void added(String db, String table, Stream<Row> rows) {
             rows.forEach(
                 row -> {
-                  System.out.println(c++);
+                  c++;
                   /*row.accept(
                   new RowVisitor() {
                     @Override
@@ -106,6 +106,7 @@ public class ReplicationInboundHandler extends ChannelInboundHandlerAdapter
                       LOGGER.info("{}.{} {} {}", db, table, idx, type.toString());
                     }*/
                 });
+            System.err.println(c);
           }
         });
   }

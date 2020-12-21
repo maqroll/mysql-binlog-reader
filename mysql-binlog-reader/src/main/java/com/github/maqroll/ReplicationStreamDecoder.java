@@ -49,7 +49,7 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
   }
 
   private void init(ChannelHandlerContext ctx) {
-    parallelDeserializer = new ParallelDeserializer(1, ctx);
+    parallelDeserializer = new ParallelDeserializer(Main.parallel == 0 ? 1 : Main.parallel, ctx);
     init.set(true);
   }
 
@@ -103,27 +103,29 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
             || ReplicationEventType.TABLE_MAP_EVENT.equals(header.getEventType())
             || ReplicationEventType.WRITE_ROWS_EVENTv1.equals(header.getEventType())) {
           int length = packet.readableBytes() - checksum.getValue();
-          // packet = packet.readRetainedSlice(length);
-          // System.out.println(ByteBufUtil.prettyHexDump(packet));
+          if (Main.parallel > 0) {
+            // packet = packet.readRetainedSlice(length);
+            // System.out.println(ByteBufUtil.prettyHexDump(packet));
 
-          // System.out.println("." + packet.refCnt());
-          // parallelDeserializer.addPacket(
-          //    header, packet.retainedSlice(packet.readerIndex(),length),
-          // serverInfo.getChecksumType(), channel);
-          LOGGER.info("Received " + header.getEventType());
-          /*        if (parallelDeserializer.pending()) {
-            ctx.executor().schedule(() -> injectDeserializedMessages(ctx), 5, TimeUnit.MILLISECONDS);
-          }*/
-          final ReplicationEventPayloadDeserializer<?> deserializer =
-              deserializers.get(header.getEventType());
-          ReplicationEventPayload payload =
-              deserializer.deserialize(packet.readSlice(length), ctx.channel());
+            // System.out.println("." + packet.refCnt());
+            parallelDeserializer.addPacket(
+                header, packet.readRetainedSlice(length), serverInfo.getChecksumType(), channel);
+            // LOGGER.info("Received " + header.getEventType());
+            /*        if (parallelDeserializer.pending()) {
+              ctx.executor().schedule(() -> injectDeserializedMessages(ctx), 5, TimeUnit.MILLISECONDS);
+            }*/
+          } else {
+            final ReplicationEventPayloadDeserializer<?> deserializer =
+                deserializers.get(header.getEventType());
+            ReplicationEventPayload payload =
+                deserializer.deserialize(packet.readSlice(length), ctx.channel());
 
-          if (header.getEventType().equals(ReplicationEventType.TABLE_MAP_EVENT)) {
-            ((TableMapEventPayload) payload).setCurrent(ctx.channel());
+            if (header.getEventType().equals(ReplicationEventType.TABLE_MAP_EVENT)) {
+              ((TableMapEventPayload) payload).setCurrent(ctx.channel());
+            }
+            out.add(new ReplicationEventImpl(header, payload));
+            packet.skipBytes(checksum.getValue());
           }
-          out.add(new ReplicationEventImpl(header, payload));
-          packet.skipBytes(checksum.getValue());
         }
         break;
       case RESPONSE_EOF:
