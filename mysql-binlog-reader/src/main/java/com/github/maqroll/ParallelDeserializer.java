@@ -1,9 +1,6 @@
 package com.github.maqroll;
 
 import com.github.maqroll.deserializers.ReplicationEventPayloadDeserializer;
-import com.github.maqroll.deserializers.RotateEventDeserializer;
-import com.github.maqroll.deserializers.TableMapEventDeserializer;
-import com.github.maqroll.deserializers.WriteRowsEventDeserializer;
 import com.github.mheath.netty.codec.mysql.ReplicationEvent;
 import com.github.mheath.netty.codec.mysql.ReplicationEventHeader;
 import com.github.mheath.netty.codec.mysql.ReplicationEventPayload;
@@ -11,8 +8,6 @@ import com.github.mheath.netty.codec.mysql.ReplicationEventType;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -34,8 +29,6 @@ public class ParallelDeserializer {
   private final BlockingQueue<Future<ReplicationEvent>> tasks = new LinkedBlockingQueue<>();
   private final ChannelHandlerContext ctx;
   private final Channel ch;
-  private final Map<ReplicationEventType, ReplicationEventPayloadDeserializer<?>> deserializers =
-      new HashMap<>();
   private final Lock lock = new ReentrantLock();
   private final Condition empty;
 
@@ -45,10 +38,6 @@ public class ParallelDeserializer {
     this.ch = ctx.channel();
 
     empty = lock.newCondition();
-
-    deserializers.put(ReplicationEventType.ROTATE_EVENT, new RotateEventDeserializer());
-    deserializers.put(ReplicationEventType.TABLE_MAP_EVENT, new TableMapEventDeserializer());
-    deserializers.put(ReplicationEventType.WRITE_ROWS_EVENTv1, new WriteRowsEventDeserializer());
 
     if (capacity < 1) {
       throw new IllegalArgumentException(
@@ -133,7 +122,7 @@ public class ParallelDeserializer {
               public ReplicationEvent call() throws Exception {
                 try {
                   final ReplicationEventPayloadDeserializer<?> deserializer =
-                      deserializers.get(header.getEventType());
+                      Deserializers.get(header.getEventType());
                   ReplicationEventPayload payload = deserializer.deserialize(buf, ch);
 
                   return new ReplicationEvent() {

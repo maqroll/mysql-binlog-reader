@@ -1,9 +1,8 @@
 package com.github.maqroll;
 
+import static com.github.maqroll.Deserializers.get;
+
 import com.github.maqroll.deserializers.ReplicationEventPayloadDeserializer;
-import com.github.maqroll.deserializers.RotateEventDeserializer;
-import com.github.maqroll.deserializers.TableMapEventDeserializer;
-import com.github.maqroll.deserializers.WriteRowsEventDeserializer;
 import com.github.mheath.netty.codec.mysql.AbstractPacketDecoder;
 import com.github.mheath.netty.codec.mysql.CapabilityFlags;
 import com.github.mheath.netty.codec.mysql.MysqlCharacterSet;
@@ -16,9 +15,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import java.nio.charset.Charset;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -34,8 +31,6 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
 
   private final AtomicBoolean init = new AtomicBoolean();
   private ParallelDeserializer parallelDeserializer;
-  private final Map<ReplicationEventType, ReplicationEventPayloadDeserializer<?>> deserializers =
-      new HashMap<>();
 
   public ReplicationStreamDecoder() {
     this(DEFAULT_MAX_PACKET_SIZE);
@@ -43,9 +38,6 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
 
   public ReplicationStreamDecoder(int maxPacketSize) {
     super(maxPacketSize);
-    deserializers.put(ReplicationEventType.ROTATE_EVENT, new RotateEventDeserializer());
-    deserializers.put(ReplicationEventType.TABLE_MAP_EVENT, new TableMapEventDeserializer());
-    deserializers.put(ReplicationEventType.WRITE_ROWS_EVENTv1, new WriteRowsEventDeserializer());
   }
 
   private void init(ChannelHandlerContext ctx) {
@@ -115,8 +107,7 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
               ctx.executor().schedule(() -> injectDeserializedMessages(ctx), 5, TimeUnit.MILLISECONDS);
             }*/
           } else {
-            final ReplicationEventPayloadDeserializer<?> deserializer =
-                deserializers.get(header.getEventType());
+            final ReplicationEventPayloadDeserializer<?> deserializer = get(header.getEventType());
             ReplicationEventPayload payload =
                 deserializer.deserialize(packet.readSlice(length), ctx.channel());
 
