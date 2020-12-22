@@ -24,9 +24,10 @@ public class AppTest {
   private static final String INSTALL_BLACKHOLE_PLUGIN = "INSTALL SONAME 'ha_blackhole'";
   private static final String CLEAN_LOGS = "RESET MASTER";
   private static final String DROP_TABLE_IF_EXISTS = "DROP TABLE IF EXISTS " + TBL;
-  private static final String CREATE_TABLE =
-      "CREATE TABLE " + TBL + " (a int, b int DEFAULT 3) ENGINE=BLACKHOLE";
+  private static final String CREATE_TABLE = "CREATE TABLE " + TBL + " (a int, b int DEFAULT 3)";
   private static final String INSERT = "INSERT INTO " + TBL + "(a) values(5)";
+  private static final String DELETE = "DELETE FROM " + TBL;
+  private static final String UPDATE = "UPDATE " + TBL + " SET a=a+1";
   private static final String GET_CHECKSUM = "show global variables like 'binlog_checksum'";
 
   @BeforeAll
@@ -38,9 +39,9 @@ public class AppTest {
         stmt.execute(DROP_TABLE_IF_EXISTS);
         stmt.execute(CREATE_TABLE);
         stmt.execute(CLEAN_LOGS);
-        for (int i = 0; i < 10; i++) {
-          stmt.execute(INSERT);
-        }
+        stmt.execute(INSERT);
+        stmt.execute(UPDATE);
+        stmt.execute(DELETE);
       }
     }
   }

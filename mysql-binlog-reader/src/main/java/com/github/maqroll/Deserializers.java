@@ -4,6 +4,7 @@ import com.github.maqroll.deserializers.DeleteRowsEventDeserializer;
 import com.github.maqroll.deserializers.ReplicationEventPayloadDeserializer;
 import com.github.maqroll.deserializers.RotateEventDeserializer;
 import com.github.maqroll.deserializers.TableMapEventDeserializer;
+import com.github.maqroll.deserializers.UpdateRowsEventDeserializer;
 import com.github.maqroll.deserializers.WriteRowsEventDeserializer;
 import com.github.mheath.netty.codec.mysql.ReplicationEventType;
 import java.util.HashMap;
@@ -21,6 +22,7 @@ public class Deserializers {
     deserializers.put(ReplicationEventType.TABLE_MAP_EVENT, new TableMapEventDeserializer());
     deserializers.put(ReplicationEventType.WRITE_ROWS_EVENTv1, new WriteRowsEventDeserializer());
     deserializers.put(ReplicationEventType.DELETE_ROWS_EVENTv1, new DeleteRowsEventDeserializer());
+    deserializers.put(ReplicationEventType.UPDATE_ROWS_EVENTv1, new UpdateRowsEventDeserializer());
   }
 
   public static ReplicationEventPayloadDeserializer<?> get(ReplicationEventType type) {

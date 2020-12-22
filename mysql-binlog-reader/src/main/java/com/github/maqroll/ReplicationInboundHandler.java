@@ -2,6 +2,7 @@ package com.github.maqroll;
 
 import com.github.mheath.netty.codec.mysql.ColumnCount;
 import com.github.mheath.netty.codec.mysql.ColumnDefinition;
+import com.github.mheath.netty.codec.mysql.ColumnType;
 import com.github.mheath.netty.codec.mysql.EofResponse;
 import com.github.mheath.netty.codec.mysql.ErrorResponse;
 import com.github.mheath.netty.codec.mysql.Handshake;
@@ -10,6 +11,7 @@ import com.github.mheath.netty.codec.mysql.OkResponse;
 import com.github.mheath.netty.codec.mysql.ReplicationEvent;
 import com.github.mheath.netty.codec.mysql.ResultsetRow;
 import com.github.mheath.netty.codec.mysql.Row;
+import com.github.mheath.netty.codec.mysql.RowVisitor;
 import com.github.mheath.netty.codec.mysql.RowsChangedVisitable;
 import com.github.mheath.netty.codec.mysql.RowsChangedVisitor;
 import com.github.mheath.netty.codec.mysql.Visitable;
@@ -82,34 +84,52 @@ public class ReplicationInboundHandler extends ChannelInboundHandlerAdapter
 
   @Override
   public void visit(ReplicationEvent repEvent, ChannelHandlerContext ctx) {
-    // LOGGER.info("Received replication event {}", repEvent);
+    LOGGER.info("Received replication event {}", repEvent);
 
     final RowsChangedVisitable payload = (RowsChangedVisitable) repEvent.payload();
+
     payload.accept(
         new RowsChangedVisitor() {
           @Override
           public void added(String db, String table, Stream<Row> rows) {
             rows.forEach(
                 row -> {
-                  c++;
-                  /*row.accept(
-                  new RowVisitor() {
-                    @Override
-                    public void visit(int idx, ColumnType type) {
-                      LOGGER.info("{}.{} {} {}", db, table, idx, type.toString());
-                    }*/
+                  row.accept(
+                      new RowVisitor() {
+                        @Override
+                        public void visit(int idx, ColumnType type) {
+                          LOGGER.info("Added {}.{} {} {}", db, table, idx, type.toString());
+                        }
+                      });
                 });
-            System.err.println(c);
           }
 
           @Override
           public void removed(String db, String table, Stream<Row> rows) {
-            // TODO
+            rows.forEach(
+                row -> {
+                  row.accept(
+                      new RowVisitor() {
+                        @Override
+                        public void visit(int idx, ColumnType type) {
+                          LOGGER.info("Removed {}.{} {} {}", db, table, idx, type.toString());
+                        }
+                      });
+                });
           }
 
           @Override
           public void updated(String db, String table, Stream<Row> rows) {
-            // TODO
+            rows.forEach(
+                row -> {
+                  row.accept(
+                      new RowVisitor() {
+                        @Override
+                        public void visit(int idx, ColumnType type) {
+                          LOGGER.info("Updated {}.{} {} {}", db, table, idx, type.toString());
+                        }
+                      });
+                });
           }
         });
   }

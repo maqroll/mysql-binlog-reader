@@ -12,34 +12,42 @@ import java.util.stream.Stream;
 public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChangedVisitable {
   private final TableMapEventPayload tableMap;
   private final long columnCount;
-  private final BitSet columnsSent;
-  private final List<Row /*Object[]*/> rows; // TODO change for something more visitor-friendly
-  private final List<Integer> columnsPresent;
+  private final BitSet columnsSentBefore;
+  private final BitSet columnsSentUpdate;
+  private final List<Row /*Object[]*/>
+      rowsBefore; // TODO change for something more visitor-friendly
+  private final List<Row /*Object[]*/>
+      rowsUpdate; // TODO change for something more visitor-friendly
+  private final List<Integer> columnsPresentBefore;
   private final Stream<Row> rowStream;
 
   private UpdateRowsEventPayload(Builder builder) {
     tableMap = builder.tableMap;
     columnCount = builder.columnCount;
-    columnsSent = builder.columnsSent;
-    rows = builder.rows;
+    columnsSentBefore = builder.columnsSentBefore;
+    columnsSentUpdate = builder.columnsSentUpdate;
+    rowsBefore = builder.rowsBefore;
+    rowsUpdate = builder.rowsUpdate;
 
-    columnsPresent = new ArrayList<>();
+    columnsPresentBefore = new ArrayList<>();
     for (int c = 0; c < (int) columnCount; c++) { // FIXME ¿columnCount could be greater than int?
-      if (columnsSent.get(c)) {
-        columnsPresent.add(c);
+      if (columnsSentBefore.get(c)) {
+        columnsPresentBefore.add(c);
       }
     }
 
     // TODO y si guardamos Row en lugar de Object[] en rows???
     // el stream no necesitaría mapear.
-    rowStream = rows.stream();
+    rowStream = rowsBefore.stream();
   }
 
   public static class Builder {
     private TableMapEventPayload tableMap;
     private long columnCount;
-    private BitSet columnsSent;
-    private List<Row /*Object[]*/> rows;
+    private BitSet columnsSentBefore;
+    private BitSet columnsSentUpdate;
+    private List<Row /*Object[]*/> rowsBefore;
+    private List<Row> rowsUpdate;
 
     public UpdateRowsEventPayload build() {
       return new UpdateRowsEventPayload(this);
@@ -55,13 +63,23 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
       return this;
     }
 
-    public Builder columnsSent(BitSet columnsSent) {
-      this.columnsSent = columnsSent;
+    public Builder columnsSentBefore(BitSet columnsSent) {
+      this.columnsSentBefore = columnsSent;
       return this;
     }
 
-    public Builder rows(List<Row /*Object[]*/> rows) {
-      this.rows = rows;
+    public Builder columnsSentUpdate(BitSet columnsSent) {
+      this.columnsSentUpdate = columnsSent;
+      return this;
+    }
+
+    public Builder rowsBefore(List<Row /*Object[]*/> rows) {
+      this.rowsBefore = rows;
+      return this;
+    }
+
+    public Builder rowsUpdate(List<Row /*Object[]*/> rows) {
+      this.rowsUpdate = rows;
       return this;
     }
   }
@@ -78,16 +96,16 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
     return columnCount;
   }
 
-  public BitSet getColumnsSent() {
-    return columnsSent;
+  public BitSet getColumnsSentBefore() {
+    return columnsSentBefore;
   }
 
-  public List<Row /*Object[]*/> getRows() {
-    return rows;
+  public List<Row /*Object[]*/> getRowsBefore() {
+    return rowsBefore;
   }
 
   @Override
   public void accept(RowsChangedVisitor visitor) {
-    visitor.added(tableMap.getDatabase(), tableMap.getTable(), rowStream);
+    visitor.updated(tableMap.getDatabase(), tableMap.getTable(), rowStream);
   }
 }

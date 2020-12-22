@@ -31,17 +31,21 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
 
   private final AtomicBoolean init = new AtomicBoolean();
   private ParallelDeserializer parallelDeserializer;
+  private final boolean parallel;
 
   public ReplicationStreamDecoder() {
-    this(DEFAULT_MAX_PACKET_SIZE);
+    this(DEFAULT_MAX_PACKET_SIZE, true);
   }
 
-  public ReplicationStreamDecoder(int maxPacketSize) {
+  public ReplicationStreamDecoder(int maxPacketSize, boolean parallel) {
     super(maxPacketSize);
+    this.parallel = parallel;
   }
 
   private void init(ChannelHandlerContext ctx) {
-    parallelDeserializer = new ParallelDeserializer(Main.parallel == 0 ? 1 : Main.parallel, ctx);
+    if (parallel) {
+      parallelDeserializer = new ParallelDeserializer(10, ctx);
+    }
     init.set(true);
   }
 
@@ -91,21 +95,16 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
       case RESPONSE_OK:
         // TODO
         ReplicationEventHeader header = decodeHeader(packet);
+        LOGGER.info("Received " + header.getEventType());
         if (ReplicationEventType.ROTATE_EVENT.equals(header.getEventType())
             || ReplicationEventType.TABLE_MAP_EVENT.equals(header.getEventType())
+            || ReplicationEventType.UPDATE_ROWS_EVENTv1.equals(header.getEventType())
+            || ReplicationEventType.DELETE_ROWS_EVENTv1.equals(header.getEventType())
             || ReplicationEventType.WRITE_ROWS_EVENTv1.equals(header.getEventType())) {
           int length = packet.readableBytes() - checksum.getValue();
-          if (Main.parallel > 0) {
-            // packet = packet.readRetainedSlice(length);
-            // System.out.println(ByteBufUtil.prettyHexDump(packet));
-
-            // System.out.println("." + packet.refCnt());
+          if (parallel) {
             parallelDeserializer.addPacket(
                 header, packet.readRetainedSlice(length), serverInfo.getChecksumType(), channel);
-            // LOGGER.info("Received " + header.getEventType());
-            /*        if (parallelDeserializer.pending()) {
-              ctx.executor().schedule(() -> injectDeserializedMessages(ctx), 5, TimeUnit.MILLISECONDS);
-            }*/
           } else {
             final ReplicationEventPayloadDeserializer<?> deserializer = get(header.getEventType());
             ReplicationEventPayload payload =

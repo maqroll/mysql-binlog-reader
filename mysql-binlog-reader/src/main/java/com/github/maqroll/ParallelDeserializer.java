@@ -89,7 +89,7 @@ public class ParallelDeserializer {
           void processResult(Future<ReplicationEvent> fEvent) {
             try {
               final ReplicationEvent evt = fEvent.get();
-              // LOGGER.info("Notifying replication event {}", evt);
+              LOGGER.info("Notifying replication event {}", evt.header().getEventType());
               ctx.fireChannelRead(evt);
             } catch (InterruptedException e) {
               // TODO improve message
