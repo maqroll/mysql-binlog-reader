@@ -3,6 +3,7 @@ package com.github.maqroll;
 import com.github.mheath.netty.codec.mysql.CapabilityFlags;
 import com.github.mheath.netty.codec.mysql.MysqlClientPacketEncoder;
 import com.github.mheath.netty.codec.mysql.MysqlServerConnectionPacketDecoder;
+import com.github.mheath.netty.codec.mysql.Position;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -12,12 +13,14 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.util.EnumSet;
 
+/** next */
 public class BinlogConnection {
   private final NioEventLoopGroup eventLoopGroup;
   private final NioEventLoopGroup secondaryEventLoopGroup;
   private final Bootstrap bootstrap;
   protected static final EnumSet<CapabilityFlags> CLIENT_CAPABILITIES =
       CapabilityFlags.getImplicitCapabilities();
+  private Position next; // TODO
 
   static {
     CLIENT_CAPABILITIES.addAll(

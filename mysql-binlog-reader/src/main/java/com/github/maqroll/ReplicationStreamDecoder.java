@@ -11,6 +11,7 @@ import com.github.mheath.netty.codec.mysql.ReplicationEvent;
 import com.github.mheath.netty.codec.mysql.ReplicationEventHeader;
 import com.github.mheath.netty.codec.mysql.ReplicationEventPayload;
 import com.github.mheath.netty.codec.mysql.ReplicationEventType;
+import com.github.mheath.netty.codec.mysql.RotateEventPayload;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -41,6 +42,14 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
           ReplicationEventType.UPDATE_ROWS_EVENTv1,
           ReplicationEventType.DELETE_ROWS_EVENTv1);
 
+  private final EnumSet<ReplicationEventType> typesToNotifyUpwards =
+      EnumSet.of(
+          ReplicationEventType.WRITE_ROWS_EVENTv1,
+          ReplicationEventType.UPDATE_ROWS_EVENTv1,
+          ReplicationEventType.DELETE_ROWS_EVENTv1);
+
+  private String filename;
+
   public ReplicationStreamDecoder() {
     this(DEFAULT_MAX_PACKET_SIZE, true);
   }
@@ -50,9 +59,17 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
     this.parallel = parallel;
   }
 
+  public String getFilename() {
+    return this.filename;
+  }
+
+  public void updateFilename(String filename) {
+    this.filename = filename;
+  }
+
   private void init(ChannelHandlerContext ctx) {
     if (parallel) {
-      parallelDeserializer = new ParallelDeserializer(10, ctx);
+      parallelDeserializer = new ParallelDeserializer(10, ctx, this, typesToNotifyUpwards);
     }
     init.set(true);
   }
@@ -115,7 +132,21 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
             if (header.getEventType().equals(ReplicationEventType.TABLE_MAP_EVENT)) {
               ((TableMapEventPayload) payload).setCurrent(ctx.channel());
             }
-            out.add(new ReplicationEventImpl(header, payload));
+
+            if (header.getEventType().equals(ReplicationEventType.ROTATE_EVENT)) {
+              RotateEventPayload rotate = (RotateEventPayload) payload;
+              this.filename = rotate.getFilename();
+              out.add(
+                  new ReplicationEventImpl(
+                      header, payload, new ROPositionImpl(this.filename, rotate.getPos())));
+            } else {
+              out.add(
+                  new ReplicationEventImpl(
+                      header,
+                      payload,
+                      new ROPositionImpl(this.filename, header.getNextPosition())));
+            }
+
             packet.skipBytes(checksum.getValue());
           }
         }

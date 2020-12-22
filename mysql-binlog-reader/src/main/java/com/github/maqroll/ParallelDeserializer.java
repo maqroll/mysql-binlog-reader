@@ -1,13 +1,16 @@
 package com.github.maqroll;
 
 import com.github.maqroll.deserializers.ReplicationEventPayloadDeserializer;
+import com.github.mheath.netty.codec.mysql.Position;
 import com.github.mheath.netty.codec.mysql.ReplicationEvent;
 import com.github.mheath.netty.codec.mysql.ReplicationEventHeader;
 import com.github.mheath.netty.codec.mysql.ReplicationEventPayload;
 import com.github.mheath.netty.codec.mysql.ReplicationEventType;
+import com.github.mheath.netty.codec.mysql.RotateEventPayload;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import java.util.EnumSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -25,17 +28,28 @@ import org.slf4j.LoggerFactory;
 
 public class ParallelDeserializer {
   private static final Logger LOGGER = LoggerFactory.getLogger(ParallelDeserializer.class);
+  private final EnumSet<ReplicationEventType> typesThatSyncReplication =
+      EnumSet.of(ReplicationEventType.ROTATE_EVENT, ReplicationEventType.TABLE_MAP_EVENT);
+  private final EnumSet<ReplicationEventType> eventsToNotify;
+
   private final ExecutorService executorService;
   private final BlockingQueue<Future<ReplicationEvent>> tasks = new LinkedBlockingQueue<>();
   private final ChannelHandlerContext ctx;
   private final Channel ch;
   private final Lock lock = new ReentrantLock();
   private final Condition empty;
+  private final ReplicationStreamDecoder decoder;
 
   // Results and exceptions get notified through ctx.
-  public ParallelDeserializer(int capacity, final ChannelHandlerContext ctx) {
+  public ParallelDeserializer(
+      int capacity,
+      final ChannelHandlerContext ctx,
+      ReplicationStreamDecoder decoder,
+      EnumSet<ReplicationEventType> notify) {
     this.ctx = ctx;
     this.ch = ctx.channel();
+    this.decoder = decoder;
+    this.eventsToNotify = notify;
 
     empty = lock.newCondition();
 
@@ -89,8 +103,10 @@ public class ParallelDeserializer {
           void processResult(Future<ReplicationEvent> fEvent) {
             try {
               final ReplicationEvent evt = fEvent.get();
-              LOGGER.info("Notifying replication event {}", evt.header().getEventType());
-              ctx.fireChannelRead(evt);
+              if (eventsToNotify.contains(evt.header().getEventType())) {
+                LOGGER.info("Notifying replication event {}", evt.header().getEventType());
+                ctx.fireChannelRead(evt);
+              }
             } catch (InterruptedException e) {
               // TODO improve message
               ctx.fireExceptionCaught(e);
@@ -125,17 +141,15 @@ public class ParallelDeserializer {
                       Deserializers.get(header.getEventType());
                   ReplicationEventPayload payload = deserializer.deserialize(buf, ch);
 
-                  return new ReplicationEvent() {
-                    @Override
-                    public ReplicationEventHeader header() {
-                      return header;
-                    }
+                  Position next = null;
+                  if (ReplicationEventType.ROTATE_EVENT.equals(header.getEventType())) {
+                    RotateEventPayload rotate = (RotateEventPayload) payload;
+                    next = new ROPositionImpl(rotate.getFilename(), rotate.getPos());
+                  } else {
+                    next = new ROPositionImpl(decoder.getFilename(), header.getNextPosition());
+                  }
 
-                    @Override
-                    public ReplicationEventPayload payload() {
-                      return payload;
-                    }
-                  };
+                  return new ReplicationEventImpl(header, payload, next);
                 } finally {
                   buf.release();
                 }
@@ -145,7 +159,7 @@ public class ParallelDeserializer {
 
     // For certain tasks we are going to wait before returning because next
     // packets can't be deserialized until it finishes
-    if (ReplicationEventType.TABLE_MAP_EVENT.equals(header.getEventType())) {
+    if (typesThatSyncReplication.contains(header.getEventType())) {
       try {
         lock.lock();
         while (pending()) {
@@ -156,10 +170,23 @@ public class ParallelDeserializer {
       } finally {
         lock.unlock();
       }
-      waitUntilFinishesAndUpdateCurrentTableMap(submit, ch);
-      // Important!!!
-      // At this point all previous tasks have finished
-      // so it's safe to update current table map
+
+      if (ReplicationEventType.TABLE_MAP_EVENT.equals(header.getEventType())) {
+        waitUntilFinishesAndUpdateCurrentTableMap(submit, ch);
+      } else if (ReplicationEventType.ROTATE_EVENT.equals(header.getEventType())) {
+        waitUntilFinishesAndUpdateCurrentFilename(submit);
+      }
+    }
+  }
+
+  private void waitUntilFinishesAndUpdateCurrentFilename(Future<ReplicationEvent> evt) {
+    try {
+      RotateEventPayload rotateEvent = (RotateEventPayload) evt.get().payload();
+      decoder.updateFilename(rotateEvent.getFilename());
+    } catch (InterruptedException e) {
+      // ignore
+    } catch (ExecutionException e) {
+      // ignore
     }
   }
 
