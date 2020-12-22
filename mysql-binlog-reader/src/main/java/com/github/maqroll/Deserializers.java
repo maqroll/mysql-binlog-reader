@@ -1,5 +1,6 @@
 package com.github.maqroll;
 
+import com.github.maqroll.deserializers.DeleteRowsEventDeserializer;
 import com.github.maqroll.deserializers.ReplicationEventPayloadDeserializer;
 import com.github.maqroll.deserializers.RotateEventDeserializer;
 import com.github.maqroll.deserializers.TableMapEventDeserializer;
@@ -19,6 +20,7 @@ public class Deserializers {
     deserializers.put(ReplicationEventType.ROTATE_EVENT, new RotateEventDeserializer());
     deserializers.put(ReplicationEventType.TABLE_MAP_EVENT, new TableMapEventDeserializer());
     deserializers.put(ReplicationEventType.WRITE_ROWS_EVENTv1, new WriteRowsEventDeserializer());
+    deserializers.put(ReplicationEventType.DELETE_ROWS_EVENTv1, new DeleteRowsEventDeserializer());
   }
 
   public static ReplicationEventPayloadDeserializer<?> get(ReplicationEventType type) {
