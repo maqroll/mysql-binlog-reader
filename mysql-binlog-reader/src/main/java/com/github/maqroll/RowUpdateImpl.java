@@ -26,10 +26,6 @@ public class RowUpdateImpl implements Row {
 
   @Override
   public void accept(RowVisitor visitor) {
-    for (int i = 0; i < valuesBefore.length; i++) {
-      visitor.visit(columnsPresentBefore.get(i), tableMap.getColumnTypes().get(i));
-    }
-
     int iBefore = 0, iAfter = 0;
 
     while (iBefore < valuesBefore.length || iAfter < valuesUpdate.length) {

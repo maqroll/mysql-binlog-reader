@@ -54,7 +54,7 @@ public class UpdateRowsEventDeserializer
       }
     }
 
-    builder.rowsBefore(
+    builder.rows(
         deserializeRows(
             tableMapEventPayload,
             columnsSentBefore,

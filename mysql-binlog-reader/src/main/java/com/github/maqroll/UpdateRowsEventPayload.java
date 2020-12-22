@@ -15,9 +15,7 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
   private final BitSet columnsSentBefore;
   private final BitSet columnsSentUpdate;
   private final List<Row /*Object[]*/>
-      rowsBefore; // TODO change for something more visitor-friendly
-  private final List<Row /*Object[]*/>
-      rowsUpdate; // TODO change for something more visitor-friendly
+      rows; // TODO change for something more visitor-friendly
   private final List<Integer> columnsPresentBefore;
   private final Stream<Row> rowStream;
 
@@ -26,8 +24,7 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
     columnCount = builder.columnCount;
     columnsSentBefore = builder.columnsSentBefore;
     columnsSentUpdate = builder.columnsSentUpdate;
-    rowsBefore = builder.rowsBefore;
-    rowsUpdate = builder.rowsUpdate;
+    rows = builder.rows;
 
     columnsPresentBefore = new ArrayList<>();
     for (int c = 0; c < (int) columnCount; c++) { // FIXME ¿columnCount could be greater than int?
@@ -38,7 +35,7 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
 
     // TODO y si guardamos Row en lugar de Object[] en rows???
     // el stream no necesitaría mapear.
-    rowStream = rowsBefore.stream();
+    rowStream = rows.stream();
   }
 
   public static class Builder {
@@ -46,8 +43,7 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
     private long columnCount;
     private BitSet columnsSentBefore;
     private BitSet columnsSentUpdate;
-    private List<Row> rowsBefore;
-    private List<Row> rowsUpdate;
+    private List<Row> rows;
 
     public UpdateRowsEventPayload build() {
       return new UpdateRowsEventPayload(this);
@@ -73,13 +69,8 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
       return this;
     }
 
-    public Builder rowsBefore(List<Row /*Object[]*/> rows) {
-      this.rowsBefore = rows;
-      return this;
-    }
-
-    public Builder rowsUpdate(List<Row /*Object[]*/> rows) {
-      this.rowsUpdate = rows;
+    public Builder rows(List<Row /*Object[]*/> rows) {
+      this.rows = rows;
       return this;
     }
   }
@@ -100,8 +91,8 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
     return columnsSentBefore;
   }
 
-  public List<Row /*Object[]*/> getRowsBefore() {
-    return rowsBefore;
+  public List<Row /*Object[]*/> getRows() {
+    return rows;
   }
 
   @Override
