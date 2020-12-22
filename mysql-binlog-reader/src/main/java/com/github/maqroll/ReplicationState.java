@@ -80,10 +80,6 @@ public enum ReplicationState {
         String checksum = rows.get(0).getValues().get(1);
         ChecksumType checksumType = ChecksumType.valueOf(checksum);
 
-        if (checksumType == null) {
-          throw new IllegalArgumentException("binlog_checksum value not supported: " + checksum);
-        }
-
         ServerInfo.getCurrent(ctx.channel()).setChecksumType(checksumType);
       } else {
         ServerInfo.getCurrent(ctx.channel()).setChecksumType(ChecksumType.NONE);

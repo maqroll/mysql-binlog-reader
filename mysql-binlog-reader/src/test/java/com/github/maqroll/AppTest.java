@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 public class AppTest {
   private static final String HOST = "localhost";
-  private static final int PORT = /*Integer.parseInt(System.getProperty("mysql1.port"))*/ 55000;
+  private static final int PORT = /*Integer.parseInt(System.getProperty("mysql1.port"))*/ 55001;
   private static final String DB = "test_db";
   private static final String TBL = "table1";
   private static final String LOCAL_URL = "jdbc:mariadb://" + HOST + ":" + PORT + "/" + DB;
@@ -47,6 +47,6 @@ public class AppTest {
 
   @Test
   public void shouldAnswerWithTrue() {
-    new BinlogConnection(new Endpoint("localhost", 54, "user", "password"));
+    new BinlogConnection(new Endpoint(HOST, PORT, REPLICATION_USER, REPLICATION_PWD));
   }
 }

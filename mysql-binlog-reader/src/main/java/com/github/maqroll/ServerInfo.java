@@ -15,7 +15,7 @@ public class ServerInfo {
   }
 
   public void setChecksumType(ChecksumType checksumType) {
-    this.setChecksumType(checksumType);
+    this.checksumType = checksumType;
   }
 
   public Endpoint getEndpoint() {

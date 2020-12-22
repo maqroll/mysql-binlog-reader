@@ -12,7 +12,7 @@ public class ResultSet {
   private static final AttributeKey<ResultSet> key =
       AttributeKey.newInstance(ResultSet.class.getName());
 
-  private List<ResultsetRow> rows = new ArrayList<ResultsetRow>();
+  private final List<ResultsetRow> rows = new ArrayList<ResultsetRow>();
 
   private ResultSet() {}
 
@@ -21,7 +21,12 @@ public class ResultSet {
     ResultSet current = attr.get();
 
     if (current == null) {
-      current = attr.setIfAbsent(new ResultSet());
+      current = new ResultSet();
+      ResultSet old = attr.setIfAbsent(current);
+
+      if (old != null) {
+        current = old;
+      }
     }
 
     return current;
