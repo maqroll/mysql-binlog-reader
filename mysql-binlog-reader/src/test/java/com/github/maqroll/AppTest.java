@@ -47,10 +47,13 @@ public class AppTest {
   }
 
   @Test
-  public void shouldAnswerWithTrue() {
+  public void basicTest() {
     BinlogClient.Builder builder =
         BinlogClient.builder(HOST, PORT, REPLICATION_USER, REPLICATION_PWD);
+    builder.stopAtEOF();
     BinlogClient client = builder.build();
-    new BinlogConnection(client);
+    
+    client.connect();
+    client.waitUntilClosed();
   }
 }

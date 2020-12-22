@@ -87,5 +87,26 @@ public class ReplicationInboundHandler extends ChannelInboundHandlerAdapter
 
       payload.accept(visitor);
     }
+
+    boolean eos = false;
+    switch (repEvent.header().getEventType()) {
+      case WRITE_ROWS_EVENTv1:
+        WriteRowsEventPayload writePayload = (WriteRowsEventPayload) repEvent.payload();
+        eos = writePayload.lastInBatch();
+        break;
+      case UPDATE_ROWS_EVENTv1:
+        UpdateRowsEventPayload updatePayload = (UpdateRowsEventPayload) repEvent.payload();
+        eos = updatePayload.lastInBatch();
+        break;
+      case DELETE_ROWS_EVENTv1:
+        DeleteRowsEventPayload deletePayload = (DeleteRowsEventPayload) repEvent.payload();
+        eos = deletePayload.lastInBatch();
+        break;
+    }
+
+    if (eos) {
+      ConnectionInfo connInfo = ConnectionInfo.getCurrent(ctx.channel());
+      connInfo.updatePosition(repEvent.next());
+    }
   }
 }

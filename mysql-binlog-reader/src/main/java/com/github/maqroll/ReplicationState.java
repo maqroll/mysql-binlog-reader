@@ -26,16 +26,16 @@ public enum ReplicationState {
     ReplicationState handshake(Handshake handshake, ChannelHandlerContext ctx) {
       LOGGER.info("Sending handshake response");
 
-      ServerInfo serverInfo = ServerInfo.getCurrent(ctx.channel());
+      ConnectionInfo connectionInfo = ConnectionInfo.getCurrent(ctx.channel());
 
       HandshakeResponse response =
           HandshakeResponse.create()
               .addCapabilities(CLIENT_CAPABILITIES)
               .addCapabilities(CLIENT_DEPRECATE_EOF)
-              .username(serverInfo.getEndpoint().getUser())
+              .username(connectionInfo.getEndpoint().getUser())
               .addAuthData(
                   MysqlNativePasswordUtil.hashPassword(
-                      serverInfo.getEndpoint().getPassword(), handshake.getAuthPluginData()))
+                      connectionInfo.getEndpoint().getPassword(), handshake.getAuthPluginData()))
               .authPluginName(Constants.MYSQL_NATIVE_PASSWORD)
               .build();
       ctx.writeAndFlush(response);
@@ -80,9 +80,9 @@ public enum ReplicationState {
         String checksum = rows.get(0).getValues().get(1);
         ChecksumType checksumType = ChecksumType.valueOf(checksum);
 
-        ServerInfo.getCurrent(ctx.channel()).setChecksumType(checksumType);
+        ConnectionInfo.getCurrent(ctx.channel()).setChecksumType(checksumType);
       } else {
-        ServerInfo.getCurrent(ctx.channel()).setChecksumType(ChecksumType.NONE);
+        ConnectionInfo.getCurrent(ctx.channel()).setChecksumType(ChecksumType.NONE);
       }
 
       ctx.pipeline()
@@ -99,11 +99,13 @@ public enum ReplicationState {
       ctx.channel().pipeline().remove("serverDecoder");
       ctx.channel().pipeline().addFirst("replicationStreamDecoder", new ReplicationStreamDecoder());
 
-      BinlogDumpCommand binlogDumpCommand =
-          BinlogDumpCommand.builder()
-              .fileName("")
-              // .addFlags(BinlogDumpFlag.BINLOG_DUMP_NON_BLOCK)
-              .build();
+      final BinlogDumpCommand.Builder builder = BinlogDumpCommand.builder().fileName("");
+
+      if (ConnectionInfo.getCurrent(ctx.channel()).stopAtEOF()) {
+        builder.addFlags(BinlogDumpFlag.BINLOG_DUMP_NON_BLOCK);
+      }
+
+      BinlogDumpCommand binlogDumpCommand = builder.build();
       ctx.writeAndFlush(binlogDumpCommand);
 
       return REQUESTED_BINLOG_STREAM;

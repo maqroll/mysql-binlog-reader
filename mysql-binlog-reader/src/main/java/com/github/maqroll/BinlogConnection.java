@@ -3,7 +3,6 @@ package com.github.maqroll;
 import com.github.mheath.netty.codec.mysql.CapabilityFlags;
 import com.github.mheath.netty.codec.mysql.MysqlClientPacketEncoder;
 import com.github.mheath.netty.codec.mysql.MysqlServerConnectionPacketDecoder;
-import com.github.mheath.netty.codec.mysql.Position;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -24,7 +23,7 @@ public class BinlogConnection {
   private final Bootstrap bootstrap;
   protected static final EnumSet<CapabilityFlags> CLIENT_CAPABILITIES =
       CapabilityFlags.getImplicitCapabilities();
-  private Position next; // TODO
+  private ChannelFuture closeFuture;
 
   static {
     CLIENT_CAPABILITIES.addAll(
@@ -37,7 +36,8 @@ public class BinlogConnection {
   public BinlogConnection(BinlogClient client) {
     final ReplicationInboundHandler replicationInboundHandler =
         new ReplicationInboundHandler(client.getVisitor());
-    final ServerInfo serverInfo = new ServerInfo(client.getEndpoint());
+    final ConnectionInfo connectionInfo =
+        new ConnectionInfo(client.getEndpoint(), client.stopAtEOF());
 
     eventLoopGroup = new NioEventLoopGroup();
     secondaryEventLoopGroup = new NioEventLoopGroup();
@@ -50,7 +50,7 @@ public class BinlogConnection {
           @Override
           public void initChannel(SocketChannel ch) throws Exception {
             CapabilityFlags.setCapabilitiesAttr(ch, CLIENT_CAPABILITIES);
-            serverInfo.setCurrent(ch);
+            connectionInfo.setCurrent(ch);
 
             ch.pipeline().addLast("serverDecoder", new MysqlServerConnectionPacketDecoder());
             ch.pipeline().addLast("clientEncoder", new MysqlClientPacketEncoder());
@@ -66,9 +66,12 @@ public class BinlogConnection {
     if (!connectFuture.isSuccess()) {
       throw new RuntimeException(connectFuture.cause());
     }
-    Channel channel = connectFuture.channel();
-    ChannelFuture closeFuture = channel.closeFuture();
 
+    Channel channel = connectFuture.channel();
+    closeFuture = channel.closeFuture();
+  }
+
+  public void waitUntilClosed() {
     closeFuture.awaitUninterruptibly();
   }
 }

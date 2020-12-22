@@ -109,8 +109,8 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
     if (!init.get()) init(ctx);
     final Channel channel = ctx.channel();
     final Set<CapabilityFlags> capabilities = CapabilityFlags.getCapabilitiesAttr(channel);
-    final ServerInfo serverInfo = ServerInfo.getCurrent(channel);
-    final ChecksumType checksum = serverInfo.getChecksumType();
+    final ConnectionInfo connectionInfo = ConnectionInfo.getCurrent(channel);
+    final ChecksumType checksum = connectionInfo.getChecksumType();
     final Charset serverCharset = MysqlCharacterSet.getServerCharsetAttr(channel).getCharset();
 
     // TODO ojo al splitting del paquete
@@ -123,7 +123,10 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
           int length = packet.readableBytes() - checksum.getValue();
           if (parallel) {
             parallelDeserializer.addPacket(
-                header, packet.readRetainedSlice(length), serverInfo.getChecksumType(), channel);
+                header,
+                packet.readRetainedSlice(length),
+                connectionInfo.getChecksumType(),
+                channel);
           } else {
             final ReplicationEventPayloadDeserializer<?> deserializer = get(header.getEventType());
             ReplicationEventPayload payload =

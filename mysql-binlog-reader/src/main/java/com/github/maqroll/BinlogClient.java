@@ -13,6 +13,8 @@ public class BinlogClient {
   private final Endpoint endpoint;
   private final Position init;
   private final RowsChangedVisitor rowChangesVisitor;
+  private BinlogConnection conn;
+  private final boolean stopAtEOF;
 
   public static class Builder {
 
@@ -23,7 +25,11 @@ public class BinlogClient {
 
     private Position init;
     private RowsChangedVisitor rowChangesVisitor;
+    private boolean stopAtEOF = false;
 
+    /*
+    By default starts from the beginning and don't stop at EOF.
+     */
     public Builder(String host, int port, String user, String password) {
       Objects.requireNonNull(host, "client host can't be null");
       if (port <= 0) throw new IllegalArgumentException("client port should be greater than 0");
@@ -40,8 +46,8 @@ public class BinlogClient {
       return this;
     }
 
-    public Builder fromStart() {
-      this.init = null;
+    public Builder stopAtEOF() {
+      this.stopAtEOF = true;
       return this;
     }
 
@@ -59,6 +65,7 @@ public class BinlogClient {
     endpoint = new Endpoint(builder.host, builder.port, builder.user, builder.password);
     init = builder.init;
     rowChangesVisitor = builder.rowChangesVisitor;
+    stopAtEOF = builder.stopAtEOF;
   }
 
   public static Builder builder(String host, int port, String user, String password) {
@@ -73,15 +80,20 @@ public class BinlogClient {
     return init;
   }
 
+  public boolean stopAtEOF() {
+    return stopAtEOF;
+  }
+
   public RowsChangedVisitor getVisitor() {
     return rowChangesVisitor;
   }
 
   public void connect() {
-    // TODO no blocking
+    // TODO inject lifecycle listener
+    conn = new BinlogConnection(this);
   }
 
   public void waitUntilClosed() {
-    // TODO
+    conn.waitUntilClosed();
   }
 }
