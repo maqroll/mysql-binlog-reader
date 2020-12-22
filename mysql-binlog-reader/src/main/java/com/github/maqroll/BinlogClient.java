@@ -52,6 +52,10 @@ public class BinlogClient {
     init = builder.init;
   }
 
+  public static Builder builder(String host, int port, String user, String password) {
+    return new Builder(host, port, user, password);
+  }
+
   public Endpoint getEndpoint() {
     return endpoint;
   }

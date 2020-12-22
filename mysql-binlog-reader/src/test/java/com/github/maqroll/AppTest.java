@@ -48,6 +48,9 @@ public class AppTest {
 
   @Test
   public void shouldAnswerWithTrue() {
-    new BinlogConnection(new Endpoint(HOST, PORT, REPLICATION_USER, REPLICATION_PWD));
+    BinlogClient.Builder builder =
+        BinlogClient.builder(HOST, PORT, REPLICATION_USER, REPLICATION_PWD);
+    BinlogClient client = builder.build();
+    new BinlogConnection(client);
   }
 }
