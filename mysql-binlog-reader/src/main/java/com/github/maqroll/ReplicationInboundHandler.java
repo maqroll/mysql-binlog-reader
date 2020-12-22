@@ -2,7 +2,6 @@ package com.github.maqroll;
 
 import com.github.mheath.netty.codec.mysql.ColumnCount;
 import com.github.mheath.netty.codec.mysql.ColumnDefinition;
-import com.github.mheath.netty.codec.mysql.ColumnType;
 import com.github.mheath.netty.codec.mysql.EofResponse;
 import com.github.mheath.netty.codec.mysql.ErrorResponse;
 import com.github.mheath.netty.codec.mysql.Handshake;
@@ -89,12 +88,6 @@ public class ReplicationInboundHandler extends ChannelInboundHandlerAdapter
     payload.accept(
         new RowsChangedVisitor() {
           @Override
-          public void columnAddedRow(String db, String table, int colIdx, ColumnType type) {}
-
-          @Override
-          public void endAddedRow(String db, String table) {}
-
-          @Override
           public void added(String db, String table, Stream<Row> rows) {
             rows.forEach(
                 row -> {
@@ -107,6 +100,16 @@ public class ReplicationInboundHandler extends ChannelInboundHandlerAdapter
                     }*/
                 });
             System.err.println(c);
+          }
+
+          @Override
+          public void removed(String db, String table, Stream<Row> rows) {
+            // TODO
+          }
+
+          @Override
+          public void updated(String db, String table, Stream<Row> rows) {
+            // TODO
           }
         });
   }

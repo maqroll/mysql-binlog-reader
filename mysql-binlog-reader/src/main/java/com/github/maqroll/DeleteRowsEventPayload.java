@@ -88,6 +88,6 @@ public class DeleteRowsEventPayload implements ReplicationEventPayload, RowsChan
 
   @Override
   public void accept(RowsChangedVisitor visitor) {
-    visitor.added(tableMap.getDatabase(), tableMap.getTable(), rowStream);
+    visitor.removed(tableMap.getDatabase(), tableMap.getTable(), rowStream);
   }
 }
