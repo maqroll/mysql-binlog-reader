@@ -46,7 +46,7 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
     private long columnCount;
     private BitSet columnsSentBefore;
     private BitSet columnsSentUpdate;
-    private List<Row /*Object[]*/> rowsBefore;
+    private List<Row> rowsBefore;
     private List<Row> rowsUpdate;
 
     public UpdateRowsEventPayload build() {

@@ -29,5 +29,24 @@ public class RowUpdateImpl implements Row {
     for (int i = 0; i < valuesBefore.length; i++) {
       visitor.visit(columnsPresentBefore.get(i), tableMap.getColumnTypes().get(i));
     }
+
+    int iBefore = 0, iAfter = 0;
+
+    while (iBefore < valuesBefore.length || iAfter < valuesUpdate.length) {
+      Integer columnBefore = columnsPresentBefore.get(iBefore);
+      Integer columnAfter = columnsPresentUpdate.get(iAfter);
+
+      if (columnAfter == columnAfter) {
+        visitor.visit(columnBefore, tableMap.getColumnTypes().get(columnBefore));
+        iBefore++;
+        iAfter++;
+      } else if (columnAfter < columnBefore) {
+        visitor.visit(columnAfter, tableMap.getColumnTypes().get(columnAfter));
+        iAfter++;
+      } else {
+        visitor.visit(columnBefore, tableMap.getColumnTypes().get(columnBefore));
+        iBefore++;
+      }
+    }
   }
 }
