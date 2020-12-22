@@ -2,6 +2,7 @@ package com.github.maqroll.deserializers;
 
 import com.github.maqroll.DeleteRowsEventPayload;
 import com.github.maqroll.RowImpl;
+import com.github.maqroll.RowsEventFlag;
 import com.github.maqroll.TableMapEventPayload;
 import com.github.maqroll.Utils;
 import com.github.mheath.netty.codec.mysql.CodecUtils;
@@ -11,8 +12,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,11 +32,13 @@ public class DeleteRowsEventDeserializer
     // System.out.println(ByteBufUtil.prettyHexDump(buf));
 
     buf.skipBytes(6); // TODO we could check that tableId is ok
-    buf.skipBytes(2); // flags
+    final Set<RowsEventFlag> flags =
+        Collections.unmodifiableSet(CodecUtils.readShortEnumSet(buf, RowsEventFlag.class)); // flags
     // TODO mayContainExtraInformation (V2)
     long columnCount = CodecUtils.readLengthEncodedInteger(buf);
     BitSet columnsSent = Utils.readBitSet(buf, (int) columnCount);
 
+    builder.flags(flags);
     builder.tableMap(tableMapEventPayload);
     builder.columnCount(columnCount);
     builder.columnsSent(columnsSent);

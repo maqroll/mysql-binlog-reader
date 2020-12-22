@@ -7,6 +7,7 @@ import com.github.mheath.netty.codec.mysql.RowsChangedVisitor;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChangedVisitable {
@@ -14,10 +15,10 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
   private final long columnCount;
   private final BitSet columnsSentBefore;
   private final BitSet columnsSentUpdate;
-  private final List<Row /*Object[]*/>
-      rows; // TODO change for something more visitor-friendly
+  private final List<Row /*Object[]*/> rows; // TODO change for something more visitor-friendly
   private final List<Integer> columnsPresentBefore;
   private final Stream<Row> rowStream;
+  private Set<RowsEventFlag> flags;
 
   private UpdateRowsEventPayload(Builder builder) {
     tableMap = builder.tableMap;
@@ -25,6 +26,7 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
     columnsSentBefore = builder.columnsSentBefore;
     columnsSentUpdate = builder.columnsSentUpdate;
     rows = builder.rows;
+    flags = builder.flags;
 
     columnsPresentBefore = new ArrayList<>();
     for (int c = 0; c < (int) columnCount; c++) { // FIXME ¿columnCount could be greater than int?
@@ -44,6 +46,7 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
     private BitSet columnsSentBefore;
     private BitSet columnsSentUpdate;
     private List<Row> rows;
+    private Set<RowsEventFlag> flags;
 
     public UpdateRowsEventPayload build() {
       return new UpdateRowsEventPayload(this);
@@ -69,6 +72,11 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
       return this;
     }
 
+    public Builder flags(Set<RowsEventFlag> flags) {
+      this.flags = flags;
+      return this;
+    }
+
     public Builder rows(List<Row /*Object[]*/> rows) {
       this.rows = rows;
       return this;
@@ -91,8 +99,12 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
     return columnsSentBefore;
   }
 
-  public List<Row /*Object[]*/> getRows() {
+  public List<Row> getRows() {
     return rows;
+  }
+
+  public Set<RowsEventFlag> getFlags() {
+    return flags;
   }
 
   @Override

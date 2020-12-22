@@ -15,6 +15,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import java.nio.charset.Charset;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -32,6 +33,13 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
   private final AtomicBoolean init = new AtomicBoolean();
   private ParallelDeserializer parallelDeserializer;
   private final boolean parallel;
+  private final EnumSet<ReplicationEventType> interestingTypes =
+      EnumSet.of(
+          ReplicationEventType.ROTATE_EVENT,
+          ReplicationEventType.TABLE_MAP_EVENT,
+          ReplicationEventType.WRITE_ROWS_EVENTv1,
+          ReplicationEventType.UPDATE_ROWS_EVENTv1,
+          ReplicationEventType.DELETE_ROWS_EVENTv1);
 
   public ReplicationStreamDecoder() {
     this(DEFAULT_MAX_PACKET_SIZE, true);
@@ -93,14 +101,8 @@ public class ReplicationStreamDecoder extends AbstractPacketDecoder
     final int status = packet.readByte() & 0xff;
     switch (status) {
       case RESPONSE_OK:
-        // TODO
         ReplicationEventHeader header = decodeHeader(packet);
-        LOGGER.info("Received " + header.getEventType());
-        if (ReplicationEventType.ROTATE_EVENT.equals(header.getEventType())
-            || ReplicationEventType.TABLE_MAP_EVENT.equals(header.getEventType())
-            || ReplicationEventType.UPDATE_ROWS_EVENTv1.equals(header.getEventType())
-            || ReplicationEventType.DELETE_ROWS_EVENTv1.equals(header.getEventType())
-            || ReplicationEventType.WRITE_ROWS_EVENTv1.equals(header.getEventType())) {
+        if (interestingTypes.contains(header.getEventType())) {
           int length = packet.readableBytes() - checksum.getValue();
           if (parallel) {
             parallelDeserializer.addPacket(

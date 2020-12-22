@@ -27,9 +27,9 @@ public class BinlogConnection {
             CapabilityFlags.CLIENT_CONNECT_WITH_DB));
   }
 
-  public BinlogConnection(Endpoint endpoint) {
+  public BinlogConnection(BinlogClient client) {
     final ReplicationInboundHandler replicationInboundHandler = new ReplicationInboundHandler();
-    final ServerInfo serverInfo = new ServerInfo(endpoint); // TODO
+    final ServerInfo serverInfo = new ServerInfo(client.getEndpoint());
 
     eventLoopGroup = new NioEventLoopGroup();
     secondaryEventLoopGroup = new NioEventLoopGroup();
@@ -52,7 +52,8 @@ public class BinlogConnection {
           }
         });
 
-    ChannelFuture connectFuture = bootstrap.connect(endpoint.getHost(), endpoint.getPort());
+    ChannelFuture connectFuture =
+        bootstrap.connect(client.getEndpoint().getHost(), client.getEndpoint().getPort());
 
     connectFuture = connectFuture.awaitUninterruptibly();
     if (!connectFuture.isSuccess()) {

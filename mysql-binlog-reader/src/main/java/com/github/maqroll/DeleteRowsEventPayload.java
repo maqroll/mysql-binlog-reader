@@ -7,6 +7,7 @@ import com.github.mheath.netty.codec.mysql.RowsChangedVisitor;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class DeleteRowsEventPayload implements ReplicationEventPayload, RowsChangedVisitable {
@@ -16,12 +17,14 @@ public class DeleteRowsEventPayload implements ReplicationEventPayload, RowsChan
   private final List<Row /*Object[]*/> rows; // TODO change for something more visitor-friendly
   private final List<Integer> columnsPresent;
   private final Stream<Row> rowStream;
+  private Set<RowsEventFlag> flags;
 
   private DeleteRowsEventPayload(Builder builder) {
     tableMap = builder.tableMap;
     columnCount = builder.columnCount;
     columnsSent = builder.columnsSent;
     rows = builder.rows;
+    flags = builder.flags;
 
     columnsPresent = new ArrayList<>();
     for (int c = 0; c < (int) columnCount; c++) { // FIXME ¿columnCount could be greater than int?
@@ -40,6 +43,7 @@ public class DeleteRowsEventPayload implements ReplicationEventPayload, RowsChan
     private long columnCount;
     private BitSet columnsSent;
     private List<Row /*Object[]*/> rows;
+    private Set<RowsEventFlag> flags;
 
     public DeleteRowsEventPayload build() {
       return new DeleteRowsEventPayload(this);
@@ -57,6 +61,11 @@ public class DeleteRowsEventPayload implements ReplicationEventPayload, RowsChan
 
     public Builder columnsSent(BitSet columnsSent) {
       this.columnsSent = columnsSent;
+      return this;
+    }
+
+    public Builder flags(Set<RowsEventFlag> flags) {
+      this.flags = flags;
       return this;
     }
 
@@ -82,8 +91,12 @@ public class DeleteRowsEventPayload implements ReplicationEventPayload, RowsChan
     return columnsSent;
   }
 
-  public List<Row /*Object[]*/> getRows() {
+  public List<Row> getRows() {
     return rows;
+  }
+
+  public Set<RowsEventFlag> getFlags() {
+    return flags;
   }
 
   @Override

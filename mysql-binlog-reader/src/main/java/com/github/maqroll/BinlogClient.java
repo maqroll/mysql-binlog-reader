@@ -1,5 +1,6 @@
 package com.github.maqroll;
 
+import com.github.mheath.netty.codec.mysql.Position;
 import java.util.Objects;
 
 /**
@@ -9,6 +10,7 @@ import java.util.Objects;
  */
 public class BinlogClient {
   private final Endpoint endpoint;
+  private final Position init;
 
   public static class Builder {
 
@@ -16,6 +18,8 @@ public class BinlogClient {
     private final int port;
     private final String user;
     private final String password;
+
+    private Position init;
 
     public Builder(String host, int port, String user, String password) {
       Objects.requireNonNull(host, "client host can't be null");
@@ -28,6 +32,16 @@ public class BinlogClient {
       this.password = password;
     }
 
+    public Builder from(String fileName, int pos) {
+      this.init = new ROPositionImpl(fileName, pos);
+      return this;
+    }
+
+    public Builder fromStart() {
+      this.init = null;
+      return this;
+    }
+
     public BinlogClient build() {
       return new BinlogClient(this);
     }
@@ -35,6 +49,15 @@ public class BinlogClient {
 
   private BinlogClient(Builder builder) {
     endpoint = new Endpoint(builder.host, builder.port, builder.user, builder.password);
+    init = builder.init;
+  }
+
+  public Endpoint getEndpoint() {
+    return endpoint;
+  }
+
+  public Position getInit() {
+    return init;
   }
 
   public void connect() {
