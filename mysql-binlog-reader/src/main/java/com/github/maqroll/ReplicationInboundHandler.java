@@ -2,7 +2,6 @@ package com.github.maqroll;
 
 import com.github.mheath.netty.codec.mysql.ColumnCount;
 import com.github.mheath.netty.codec.mysql.ColumnDefinition;
-import com.github.mheath.netty.codec.mysql.ColumnType;
 import com.github.mheath.netty.codec.mysql.EofResponse;
 import com.github.mheath.netty.codec.mysql.ErrorResponse;
 import com.github.mheath.netty.codec.mysql.Handshake;
@@ -10,24 +9,23 @@ import com.github.mheath.netty.codec.mysql.MysqlServerPacketVisitor;
 import com.github.mheath.netty.codec.mysql.OkResponse;
 import com.github.mheath.netty.codec.mysql.ReplicationEvent;
 import com.github.mheath.netty.codec.mysql.ResultsetRow;
-import com.github.mheath.netty.codec.mysql.Row;
-import com.github.mheath.netty.codec.mysql.RowVisitor;
 import com.github.mheath.netty.codec.mysql.RowsChangedVisitable;
 import com.github.mheath.netty.codec.mysql.RowsChangedVisitor;
 import com.github.mheath.netty.codec.mysql.Visitable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ReplicationInboundHandler extends ChannelInboundHandlerAdapter
     implements MysqlServerPacketVisitor {
   private static final Logger LOGGER = LoggerFactory.getLogger(ReplicationInboundHandler.class);
+  private final RowsChangedVisitor visitor;
   private ReplicationState replicationState = ReplicationState.INIT;
-  private long c = 0L;
 
-  public ReplicationInboundHandler() {}
+  public ReplicationInboundHandler(RowsChangedVisitor visitor) {
+    this.visitor = visitor;
+  }
 
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -84,53 +82,10 @@ public class ReplicationInboundHandler extends ChannelInboundHandlerAdapter
 
   @Override
   public void visit(ReplicationEvent repEvent, ChannelHandlerContext ctx) {
-    LOGGER.info("Received replication event {}", repEvent);
+    if (visitor != null) {
+      final RowsChangedVisitable payload = (RowsChangedVisitable) repEvent.payload();
 
-    final RowsChangedVisitable payload = (RowsChangedVisitable) repEvent.payload();
-
-    payload.accept(
-        new RowsChangedVisitor() {
-          @Override
-          public void added(String db, String table, Stream<Row> rows) {
-            rows.forEach(
-                row -> {
-                  row.accept(
-                      new RowVisitor() {
-                        @Override
-                        public void visit(int idx, ColumnType type) {
-                          LOGGER.info("Added {}.{} {} {}", db, table, idx, type.toString());
-                        }
-                      });
-                });
-          }
-
-          @Override
-          public void removed(String db, String table, Stream<Row> rows) {
-            rows.forEach(
-                row -> {
-                  row.accept(
-                      new RowVisitor() {
-                        @Override
-                        public void visit(int idx, ColumnType type) {
-                          LOGGER.info("Removed {}.{} {} {}", db, table, idx, type.toString());
-                        }
-                      });
-                });
-          }
-
-          @Override
-          public void updated(String db, String table, Stream<Row> rows) {
-            rows.forEach(
-                row -> {
-                  row.accept(
-                      new RowVisitor() {
-                        @Override
-                        public void visit(int idx, ColumnType type) {
-                          LOGGER.info("Updated {}.{} {} {}", db, table, idx, type.toString());
-                        }
-                      });
-                });
-          }
-        });
+      payload.accept(visitor);
+    }
   }
 }

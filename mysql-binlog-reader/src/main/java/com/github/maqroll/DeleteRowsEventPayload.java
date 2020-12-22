@@ -99,8 +99,12 @@ public class DeleteRowsEventPayload implements ReplicationEventPayload, RowsChan
     return flags;
   }
 
+  public boolean lastInBatch() {
+    return flags.contains(RowsEventFlag.EOF);
+  }
+
   @Override
   public void accept(RowsChangedVisitor visitor) {
-    visitor.removed(tableMap.getDatabase(), tableMap.getTable(), rowStream);
+    visitor.removed(tableMap.getDatabase(), tableMap.getTable(), rowStream, lastInBatch());
   }
 }

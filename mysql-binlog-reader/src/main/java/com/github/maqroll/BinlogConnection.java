@@ -13,7 +13,11 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.util.EnumSet;
 
-/** next */
+/**
+ * Every replication packet contains next position. Besides we keep last re-startable position in
+ * case we need to open a new connection. Position is moved when last packet in row batch is
+ * notified.
+ */
 public class BinlogConnection {
   private final NioEventLoopGroup eventLoopGroup;
   private final NioEventLoopGroup secondaryEventLoopGroup;
@@ -31,7 +35,8 @@ public class BinlogConnection {
   }
 
   public BinlogConnection(BinlogClient client) {
-    final ReplicationInboundHandler replicationInboundHandler = new ReplicationInboundHandler();
+    final ReplicationInboundHandler replicationInboundHandler =
+        new ReplicationInboundHandler(client.getVisitor());
     final ServerInfo serverInfo = new ServerInfo(client.getEndpoint());
 
     eventLoopGroup = new NioEventLoopGroup();
@@ -50,7 +55,6 @@ public class BinlogConnection {
             ch.pipeline().addLast("serverDecoder", new MysqlServerConnectionPacketDecoder());
             ch.pipeline().addLast("clientEncoder", new MysqlClientPacketEncoder());
             ch.pipeline().addLast("binlogEncoder", new BinlogDumpEncoder());
-            // TODO add the rest of handlers
             ch.pipeline().addLast(secondaryEventLoopGroup, "adapter", replicationInboundHandler);
           }
         });

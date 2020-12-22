@@ -97,8 +97,12 @@ public class WriteRowsEventPayload implements ReplicationEventPayload, RowsChang
     return flags;
   }
 
+  public boolean lastInBatch() {
+    return flags.contains(RowsEventFlag.EOF);
+  }
+
   @Override
   public void accept(RowsChangedVisitor visitor) {
-    visitor.added(tableMap.getDatabase(), tableMap.getTable(), rowStream);
+    visitor.added(tableMap.getDatabase(), tableMap.getTable(), rowStream, lastInBatch());
   }
 }

@@ -107,8 +107,12 @@ public class UpdateRowsEventPayload implements ReplicationEventPayload, RowsChan
     return flags;
   }
 
+  public boolean lastInBatch() {
+    return flags.contains(RowsEventFlag.EOF);
+  }
+
   @Override
   public void accept(RowsChangedVisitor visitor) {
-    visitor.updated(tableMap.getDatabase(), tableMap.getTable(), rowStream);
+    visitor.updated(tableMap.getDatabase(), tableMap.getTable(), rowStream, lastInBatch());
   }
 }
