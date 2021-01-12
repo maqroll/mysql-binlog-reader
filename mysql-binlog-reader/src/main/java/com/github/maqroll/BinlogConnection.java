@@ -71,6 +71,10 @@ public class BinlogConnection {
     closeFuture = channel.closeFuture();
   }
 
+  public boolean isConnected() {
+    return closeFuture != null && closeFuture.isDone();
+  }
+
   public void waitUntilClosed() {
     closeFuture.awaitUninterruptibly();
   }

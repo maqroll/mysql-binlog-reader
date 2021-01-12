@@ -90,7 +90,9 @@ public class BinlogClient {
 
   public void connect() {
     // TODO inject lifecycle listener
-    conn = new BinlogConnection(this);
+    if (conn == null || !conn.isConnected()) { // nothing if already connected
+      conn = new BinlogConnection(this);
+    }
   }
 
   public void waitUntilClosed() {
