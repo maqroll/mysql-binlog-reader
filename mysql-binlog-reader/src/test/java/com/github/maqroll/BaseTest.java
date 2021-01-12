@@ -9,7 +9,7 @@ public class BaseTest {
   static final String ROOT_USER = "root";
   static final String ROOT_PWD = "root";
   static final String REPLICATION_USER = "db_user";
-  final String REPLICATION_PWD = "password";
+  static final String REPLICATION_PWD = "password";
   static final String GRANT_REPLICATION_PRIVILEGES =
       "GRANT SELECT, RELOAD, REPLICATION SLAVE, BINLOG MONITOR  ON *.* TO '"
           + REPLICATION_USER
