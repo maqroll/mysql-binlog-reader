@@ -61,7 +61,7 @@ public class DeserializerTest extends BaseTest {
 
     @Override
     public void visit(int idx, ColumnType type) {
-      /* value = */
+      /* TODO value = */
     }
 
     public Object getValue() {
@@ -74,7 +74,6 @@ public class DeserializerTest extends BaseTest {
 
     @Override
     public void added(String db, String table, Stream<Row> rows, boolean eos) {
-      assertEquals(1, rows.count());
       Optional<Row> first = rows.findFirst();
 
       assertTrue(first.isPresent());
@@ -152,7 +151,6 @@ public class DeserializerTest extends BaseTest {
   }
 
   // TODO metodos auxiliares para
-  // -- leer el binlog con cada parser (en cada test)
   // -- comparar el resultado
 
   @Test
